@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 
 import { LegalPage, LegalSection } from "@/components/LegalPage";
 import { SITE } from "@/constants/data";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "Gizlilik siyasəti",
   description: `${SITE.name} gizlilik siyasəti — ${SITE.domain}`,
-  alternates: { canonical: "/privacy" },
-};
+  path: "/privacy",
+});
 
 export default function PrivacyPage() {
   const updated = "29 may 2026";
@@ -20,7 +21,6 @@ export default function PrivacyPage() {
         saxlanıldığını və qorunduğunu izah edir. Platformadan istifadə etməklə bu siyasətlə
         tanış olduğunuzu qəbul edirsiniz.
       </p>
-      <p className="text-xs text-brand-muted">Son yenilənmə: {updated}</p>
 
       <LegalSection title="1. Məlumat operatoru">
         <p>
@@ -47,7 +47,7 @@ export default function PrivacyPage() {
           <li>Elan məlumatları (başlıq, təsvir, qiymət, şəkillər, şəhər, kateqoriya)</li>
           <li>Əlaqə məlumatları (telefon nömrəsi — istifadəçi daxil edərsə)</li>
           <li>Mesajlaşma məzmunu (alıcı və satıcı arasında)</li>
-          <li>Texniki məlumatlar (cihaz növü, OS versiyası, IP ünvanı, tətbiq versiyası, log qeydləri)</li>
+          <li>Texniki məlumatlar (cihaz növü, OS versiyası, IP ünvanı, brauzer versiyası, log qeydləri)</li>
           <li>İstifadə analitikası (səhifə baxışları, axtarış sorğuları, interaksiya məlumatları)</li>
         </ul>
       </LegalSection>
@@ -156,6 +156,10 @@ export default function PrivacyPage() {
           </a>
         </p>
       </LegalSection>
+
+      <p className="border-t border-brand-border pt-6 text-xs text-brand-muted">
+        Son yenilənmə: {updated}
+      </p>
     </LegalPage>
   );
 }

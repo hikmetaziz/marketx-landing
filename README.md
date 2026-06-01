@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MarktX Landing (marketx.az)
 
-## Getting Started
+Rəsmi MarktX veb-saytı — Phase 1: landing, qanuni səhifələr, SEO və etibar.
 
-First, run the development server:
+- **Brand:** MarktX
+- **Domain:** [marketx.az](https://marketx.az)
+- **Stack:** Next.js 16, TypeScript, Tailwind CSS v4
+
+## Phase 1 scope
+
+- Ana səhifə (landing)
+- Statik səhifələr: about, categories, how-it-works, contact, pricing, privacy, terms
+- SEO: metadata, sitemap, robots
+- Gələcək marşrutlar (tezliklə): `/listings`, `/listings/[id]`, `/categories/[slug]`
+- **Aktiv deyil (tezliklə):** veb login, elan yerləşdirmə, axtarış, ödəniş, AI
+
+Mobil tətbiq ayrı repodadır — bu layihəyə toxunulmur.
+
+## Lokal işə salma
 
 ```bash
+cd marketx-landing
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Brauzer: [http://localhost:3000](http://localhost:3000)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment (optional — Phase 2 auth)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Phase 1-də veb auth aktiv deyil. Supabase inteqrasiyası üçün (gələcək):
 
-## Learn More
+```bash
+cp .env.example .env.local
+```
 
-To learn more about Next.js, take a look at the following resources:
+`.env.local` faylına əlavə edin (mobil app ilə eyni layihə):
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**Vacib:** `.env.local` heç vaxt git-ə commit edilməməlidir (`.gitignore`-da var).
 
-## Deploy on Vercel
+## Build
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm run build
+npm run start
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Vercel deploy
+
+1. [Vercel](https://vercel.com) → New Project → `marketx-landing` qovluğu
+2. Framework: Next.js (avtomatik)
+3. Environment variables (Phase 2 üçün): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+4. Domain: `marketx.az` DNS-i Vercel-ə yönəldin
+5. Deploy
+
+CLI ilə:
+
+```bash
+npx vercel --prod
+```
+
+## SQL (Supabase)
+
+SQL faylları `supabase/` qovluğundadır — yalnız Supabase Dashboard → SQL Editor-də bir dəfə işlədilir:
+
+- `ENABLE_LISTINGS_AND_RLS.sql` — listings RLS
+- `MAKE_ADMIN.sql` — admin rol təyini
+
+## Struktur
+
+```
+src/
+  app/           # Səhifələr (App Router)
+  components/    # UI komponentləri
+  constants/     # Məzmun və konfiq
+  lib/           # SEO, helpers
+public/images/   # Statik şəkillər
+```

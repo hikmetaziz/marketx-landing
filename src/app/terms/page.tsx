@@ -2,12 +2,13 @@ import type { Metadata } from "next";
 
 import { LegalPage, LegalSection } from "@/components/LegalPage";
 import { SITE } from "@/constants/data";
+import { createPageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = createPageMetadata({
   title: "İstifadə razılaşması",
   description: `${SITE.name} istifadə razılaşması — ${SITE.domain}`,
-  alternates: { canonical: "/terms" },
-};
+  path: "/terms",
+});
 
 export default function TermsPage() {
   return (

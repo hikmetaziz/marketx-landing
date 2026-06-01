@@ -1,0 +1,45 @@
+"use client";
+
+import Image from "next/image";
+import { useState } from "react";
+
+import { sanitizeImageUrl } from "@/lib/images/validate-image-url";
+
+type Props = {
+  src: string;
+  alt: string;
+  fallbackClass: string;
+  sizes?: string;
+};
+
+function ListingImageFallback({ alt, fallbackClass }: Pick<Props, "alt" | "fallbackClass">) {
+  return (
+    <div
+      className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${fallbackClass}`}
+      aria-hidden="true"
+    >
+      <span className="text-[11px] font-semibold uppercase tracking-wide text-brand-muted/70">{alt}</span>
+    </div>
+  );
+}
+
+export function ListingImage({ src, alt, fallbackClass, sizes }: Props) {
+  const [failed, setFailed] = useState(false);
+  const safeSrc = sanitizeImageUrl(src);
+
+  if (!safeSrc || failed) {
+    return <ListingImageFallback alt={alt} fallbackClass={fallbackClass} />;
+  }
+
+  return (
+    <Image
+      src={safeSrc}
+      alt={alt}
+      fill
+      unoptimized={safeSrc.startsWith("blob:")}
+      sizes={sizes ?? "(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 280px"}
+      className="object-cover"
+      onError={() => setFailed(true)}
+    />
+  );
+}

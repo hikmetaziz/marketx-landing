@@ -12,7 +12,10 @@ export function ResetPasswordForm() {
   const router = useRouter();
   const supabase = useMemo(() => (isSupabaseConfigured() ? createClient() : null), []);
 
-  const [ready, setReady] = useState(false);
+  const [status, setStatus] = useState<"checking" | "ready" | "invalid">("checking");
+  const [invalidReason, setInvalidReason] = useState(
+    "Bərpa linkinin vaxtı bitib və ya artıq istifadə olunub. Tətbiqdə yenidən «Parolu unutmusunuz?» edib yeni email alın.",
+  );
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,20 +26,81 @@ export function ResetPasswordForm() {
     if (!supabase) return;
     let mounted = true;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const markReady = () => {
+      if (mounted) setStatus("ready");
+    };
+    const markInvalid = (reason?: string) => {
       if (!mounted) return;
-      if (session) {
-        setReady(true);
+      if (reason) setInvalidReason(reason);
+      setStatus((prev) => (prev === "ready" ? prev : "invalid"));
+    };
+
+    const readTokens = () => {
+      const rawHash = window.location.hash.startsWith("#")
+        ? window.location.hash.slice(1)
+        : window.location.hash;
+      const hashParams = rawHash ? new URLSearchParams(rawHash) : null;
+      const queryParams = new URLSearchParams(window.location.search);
+      return {
+        accessToken: hashParams?.get("access_token") ?? null,
+        refreshToken: hashParams?.get("refresh_token") ?? null,
+        code: queryParams.get("code"),
+        error: queryParams.get("error_description") ?? queryParams.get("error"),
+      };
+    };
+
+    const bootstrap = async () => {
+      const tokens = readTokens();
+
+      if (tokens.error) {
+        markInvalid(tokens.error);
+        return;
       }
-    });
+
+      // Implicit flow (mobil app emaili): #access_token & refresh_token
+      if (tokens.accessToken && tokens.refreshToken) {
+        const { error } = await supabase.auth.setSession({
+          access_token: tokens.accessToken,
+          refresh_token: tokens.refreshToken,
+        });
+        if (!error) {
+          markReady();
+          return;
+        }
+      }
+
+      // PKCE flow: ?code=
+      if (tokens.code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(tokens.code);
+        if (!error) {
+          markReady();
+          return;
+        }
+        markInvalid(
+          "Bu link köhnə formatdadır və brauzerdə açıla bilmir. Tətbiqi yeniləyin və YENİ parol bərpa linki göndərin.",
+        );
+        return;
+      }
+
+      // Artıq sessiya varsa (məs. detectSessionInUrl onu emal edibsə)
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        markReady();
+        return;
+      }
+
+      markInvalid();
+    };
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY" || session) {
-        setReady(true);
+      if (session && (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN" || event === "INITIAL_SESSION")) {
+        markReady();
       }
     });
+
+    void bootstrap();
 
     return () => {
       mounted = false;
@@ -86,7 +150,7 @@ export function ResetPasswordForm() {
     }, 1500);
   };
 
-  if (!ready) {
+  if (status === "checking") {
     return (
       <div className="card-premium mx-auto max-w-md rounded-2xl p-6 text-center hover:translate-y-0">
         <Loader2 className="mx-auto h-8 w-8 animate-spin text-brand-primary" />
@@ -94,6 +158,21 @@ export function ResetPasswordForm() {
         <Link
           href="/login"
           className="mt-6 inline-block text-sm font-semibold text-brand-primary hover:underline"
+        >
+          Daxil ol səhifəsinə qayıt
+        </Link>
+      </div>
+    );
+  }
+
+  if (status === "invalid") {
+    return (
+      <div className="card-premium mx-auto max-w-md rounded-2xl p-6 text-center hover:translate-y-0">
+        <h2 className="text-xl font-extrabold text-brand-text">Link işləmir</h2>
+        <p className="mt-3 text-sm leading-relaxed text-brand-muted">{invalidReason}</p>
+        <Link
+          href="/login"
+          className="btn-primary-premium mt-6 inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white"
         >
           Daxil ol səhifəsinə qayıt
         </Link>

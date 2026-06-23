@@ -3,7 +3,7 @@
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useState } from "react";
 
 import {
   isEmailConfirmed,
@@ -12,8 +12,12 @@ import {
   validateFullName,
   validatePassword,
 } from "@/lib/auth";
-import { sanitizeInternalPath } from "@/lib/safe-path";
-import { createClient, getAuthRedirectUrl, isSupabaseConfigured } from "@/lib/supabase/client";
+import {
+  isCreateListingReturnPath,
+  resolveAuthReturnTo,
+  sanitizeInternalPath,
+} from "@/lib/safe-path";
+import { getAuthRedirectUrl, isSupabaseConfigured } from "@/lib/supabase/client";
 import { useAuthUser } from "@/lib/supabase/use-auth-user";
 
 type AuthMode = "login" | "register";
@@ -62,8 +66,10 @@ function PasswordField({
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const returnTo = sanitizeInternalPath(searchParams.get("returnTo"));
-  const wantsCreateListing = returnTo === "/create-listing";
+  const returnTo = resolveAuthReturnTo(sanitizeInternalPath(searchParams.get("returnTo")));
+  const wantsCreateListing = isCreateListingReturnPath(
+    sanitizeInternalPath(searchParams.get("returnTo")),
+  );
   const initialMode: AuthMode =
     searchParams.get("mode") === "login"
       ? "login"
@@ -88,8 +94,7 @@ export function LoginForm() {
   const [errorMessage, setErrorMessage] = useState(callbackError ? "Giriş linki etibarsızdır və ya vaxtı bitib." : "");
   const [infoMessage, setInfoMessage] = useState("");
 
-  const supabase = useMemo(() => (isSupabaseConfigured() ? createClient() : null), []);
-  const { user: authUser, loading: authLoading, isAuthenticated } = useAuthUser();
+  const { supabase, user: authUser, loading: authLoading, isAuthenticated } = useAuthUser();
   const normalizedEmail = email.trim().toLowerCase();
   const loading = loadingAction !== null;
   const isRegisterForm = mode === "register";
@@ -99,11 +104,6 @@ export function LoginForm() {
       authUser?.email?.split("@")[0] ??
       "İstifadəçi")
     : null;
-
-  useEffect(() => {
-    if (!hasExistingSession || returnTo === "/") return;
-    router.replace(returnTo);
-  }, [hasExistingSession, returnTo, router]);
 
   if (!isSupabaseConfigured() || !supabase) {
     return (

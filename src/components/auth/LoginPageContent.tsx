@@ -3,10 +3,12 @@
 import { useSearchParams } from "next/navigation";
 
 import { LoginForm } from "@/components/auth/LoginForm";
+import { isCreateListingReturnPath, sanitizeInternalPath } from "@/lib/safe-path";
 
 export function LoginPageContent() {
   const searchParams = useSearchParams();
-  const wantsCreateListing = searchParams.get("returnTo") === "/create-listing";
+  const returnTo = sanitizeInternalPath(searchParams.get("returnTo"));
+  const wantsCreateListing = isCreateListingReturnPath(returnTo);
 
   return (
     <>

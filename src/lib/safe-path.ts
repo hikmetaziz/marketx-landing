@@ -18,3 +18,16 @@ export function sanitizeInternalPath(
 
   return trimmed;
 }
+
+/** Web + mobil deep link — elan yerləşdirmə girişi. */
+export function isCreateListingReturnPath(path: string): boolean {
+  return path === "/create-listing" || path === "/(tabs)/create-listing";
+}
+
+/** Mobil `/(tabs)/...` yolunu veb marşruta çevirir. */
+export function resolveAuthReturnTo(path: string): string {
+  if (path === "/(tabs)/create-listing") {
+    return "/create-listing";
+  }
+  return path;
+}

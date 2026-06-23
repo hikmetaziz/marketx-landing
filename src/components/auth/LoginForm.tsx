@@ -17,7 +17,11 @@ import {
   resolveAuthReturnTo,
   sanitizeInternalPath,
 } from "@/lib/safe-path";
-import { getAuthRedirectUrl, isSupabaseConfigured } from "@/lib/supabase/client";
+import {
+  createPasswordResetClient,
+  getAuthRedirectUrl,
+  isSupabaseConfigured,
+} from "@/lib/supabase/client";
 import { useAuthUser } from "@/lib/supabase/use-auth-user";
 
 type AuthMode = "login" | "register";
@@ -246,7 +250,8 @@ export function LoginForm() {
     }
 
     setLoadingAction("reset");
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+    const resetSupabase = createPasswordResetClient();
+    const { error } = await resetSupabase.auth.resetPasswordForEmail(normalizedEmail, {
       redirectTo: getAuthRedirectUrl("/reset-password"),
     });
     setLoadingAction(null);

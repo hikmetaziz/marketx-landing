@@ -3,7 +3,7 @@
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { translateAuthError, validatePassword } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -14,8 +14,9 @@ export function ResetPasswordForm() {
 
   const [status, setStatus] = useState<"checking" | "ready" | "invalid">("checking");
   const [invalidReason, setInvalidReason] = useState(
-    "Bərpa linkinin vaxtı bitib və ya artıq istifadə olunub. Tətbiqdə yenidən «Parolu unutmusunuz?» edib yeni email alın.",
+    "Bərpa linkinin vaxtı bitib və ya artıq istifadə olunub. Yenidən «Parolu unutmusunuz?» edib yeni email alın.",
   );
+  const bootstrapStarted = useRef(false);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -23,7 +24,8 @@ export function ResetPasswordForm() {
   const [infoMessage, setInfoMessage] = useState("");
 
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase || bootstrapStarted.current) return;
+    bootstrapStarted.current = true;
     let mounted = true;
 
     const markReady = () => {
@@ -45,6 +47,8 @@ export function ResetPasswordForm() {
         accessToken: hashParams?.get("access_token") ?? null,
         refreshToken: hashParams?.get("refresh_token") ?? null,
         code: queryParams.get("code"),
+        tokenHash: queryParams.get("token_hash"),
+        recoveryType: queryParams.get("type"),
         error: queryParams.get("error_description") ?? queryParams.get("error"),
       };
     };
@@ -53,11 +57,31 @@ export function ResetPasswordForm() {
       const tokens = readTokens();
 
       if (tokens.error) {
-        markInvalid(tokens.error);
+        const message =
+          tokens.error === "invalid_link"
+            ? "Bərpa linki düzgün deyil."
+            : decodeURIComponent(tokens.error);
+        markInvalid(translateAuthError(message));
         return;
       }
 
-      // Implicit flow (mobil app emaili): #access_token & refresh_token
+      const { data: existingSession } = await supabase.auth.getSession();
+      if (existingSession.session) {
+        markReady();
+        return;
+      }
+
+      // token_hash — server route bir dəfə yoxlayır (pkce_ daxil), sessiya cookie-yə yazılır
+      if (tokens.tokenHash && tokens.recoveryType === "recovery") {
+        const params = new URLSearchParams({
+          token_hash: tokens.tokenHash,
+          type: "recovery",
+        });
+        window.location.replace(`/auth/recovery?${params.toString()}`);
+        return;
+      }
+
+      // Implicit flow (mobil app): #access_token & refresh_token
       if (tokens.accessToken && tokens.refreshToken) {
         const { error } = await supabase.auth.setSession({
           access_token: tokens.accessToken,
@@ -79,13 +103,6 @@ export function ResetPasswordForm() {
         markInvalid(
           "Bu link köhnə formatdadır və brauzerdə açıla bilmir. Tətbiqi yeniləyin və YENİ parol bərpa linki göndərin.",
         );
-        return;
-      }
-
-      // Artıq sessiya varsa (məs. detectSessionInUrl onu emal edibsə)
-      const { data } = await supabase.auth.getSession();
-      if (data.session) {
-        markReady();
         return;
       }
 

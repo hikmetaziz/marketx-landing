@@ -46,14 +46,8 @@ export function validateFullName(name: string): string | null {
 }
 
 export function validatePassword(password: string): string | null {
-  if (password.length < 8) {
-    return "Parol ən azı 8 simvol olmalıdır.";
-  }
-  if (!/[a-zA-ZəöüğıçşƏÖÜĞIÇŞ]/.test(password)) {
-    return "Parolda ən azı bir hərf olmalıdır.";
-  }
-  if (!/[!@#$%^&*()_+\-=[\]{};':"\\|,.<>/?`~]/.test(password)) {
-    return "Parolda ən azı bir xüsusi simvol olmalıdır (!@#$ və s.).";
+  if (password.length < 6) {
+    return "Parol ən azı 6 simvol olmalıdır.";
   }
   return null;
 }

@@ -37,6 +37,38 @@ body {
     linear-gradient(180deg, #f8faff 0%, #ffffff 420px);
 }
 
+.hero-gradient-bg {
+  background: linear-gradient(135deg, #0c3b6e 0%, #0f766e 38%, #1d4ed8 68%, #b45309 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.hero-gradient-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 60% 50% at 20% 40%, rgba(0, 200, 232, 0.18), transparent 60%),
+    radial-gradient(ellipse 50% 60% at 80% 60%, rgba(255, 140, 0, 0.2), transparent 55%);
+  pointer-events: none;
+}
+
+.search-glass {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.search-glass-field {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: rgba(255, 255, 255, 0.55);
+  cursor: not-allowed;
+  outline: none;
+}
+
 .card-premium {
   border: 1px solid rgb(226 232 240 / 0.85);
   background: #ffffff;

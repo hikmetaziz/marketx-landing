@@ -15,9 +15,11 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <div className="home-premium-bg overflow-x-hidden">
-      <HeroSection />
-      <SearchBarSection />
+    <div className="overflow-x-hidden">
+      <div className="hero-gradient-bg">
+        <HeroSection />
+        <SearchBarSection />
+      </div>
       <CategoryCardsSection />
       <TrustValueSection />
       <PopularListingsSection />

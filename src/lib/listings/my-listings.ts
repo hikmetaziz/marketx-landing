@@ -16,10 +16,11 @@ export type MyListing = {
   view_count: number;
   created_at: string;
   updated_at: string | null;
+  expires_at: string | null;
 };
 
 const MY_LISTING_SELECT =
-  "id, slug, title, price, category, city, status, image_url, image_urls, rejected_reason, view_count, created_at, updated_at";
+  "id, slug, title, price, category, city, status, image_url, image_urls, rejected_reason, view_count, created_at, updated_at, expires_at";
 
 function mapMyListingRow(row: Record<string, unknown>): MyListing {
   return {
@@ -36,6 +37,7 @@ function mapMyListingRow(row: Record<string, unknown>): MyListing {
     view_count: Number(row.view_count ?? 0),
     created_at: row.created_at as string,
     updated_at: (row.updated_at as string | null) ?? null,
+    expires_at: (row.expires_at as string | null) ?? null,
   };
 }
 

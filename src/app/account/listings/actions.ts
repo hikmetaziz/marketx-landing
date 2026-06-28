@@ -51,3 +51,39 @@ export async function markMyListingSold(listingId: string): Promise<MarkSoldResu
 
   return { ok: true };
 }
+
+type RenewResult = { ok: true } | { ok: false; error: string };
+
+export async function renewMyListing(listingId: string): Promise<RenewResult> {
+  if (!isSupabaseConfigured()) {
+    return { ok: false, error: "Supabase konfiqurasiyası tapılmadı." };
+  }
+
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return { ok: false, error: "Daxil olmamısınız." };
+  }
+
+  const supabase = await createClient();
+  const { data: listing } = await supabase
+    .from("listings")
+    .select("slug")
+    .eq("id", listingId)
+    .maybeSingle();
+
+  const { error } = await supabase.rpc("renew_listing", { p_listing_id: listingId });
+
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+
+  revalidatePath("/account/listings");
+  revalidatePath("/listings");
+  revalidatePath("/");
+
+  if (listing?.slug) {
+    revalidatePath(`/listings/${listing.slug}`);
+  }
+
+  return { ok: true };
+}

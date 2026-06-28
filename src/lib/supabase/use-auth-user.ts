@@ -1,7 +1,7 @@
 "use client";
 
 import type { User } from "@supabase/supabase-js";
-import { useEffect, useMemo, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 import { isEmailConfirmed } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
@@ -11,65 +11,156 @@ function toAuthenticatedUser(user: User | null | undefined): User | null {
   return user;
 }
 
-export function useAuthUser() {
-  const supabase = useMemo(() => (isSupabaseConfigured() ? createClient() : null), []);
-  const [user, setUser] = useState<User | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [loading, setLoading] = useState(isSupabaseConfigured());
+type AuthStore = {
+  user: User | null;
+  loading: boolean;
+  isAdmin: boolean;
+};
 
-  useEffect(() => {
-    if (!supabase) {
+const SERVER_SNAPSHOT_CONFIGURED: AuthStore = {
+  user: null,
+  loading: true,
+  isAdmin: false,
+};
+
+const SERVER_SNAPSHOT_UNCONFIGURED: AuthStore = {
+  user: null,
+  loading: false,
+  isAdmin: false,
+};
+
+let store: AuthStore = isSupabaseConfigured()
+  ? SERVER_SNAPSHOT_CONFIGURED
+  : SERVER_SNAPSHOT_UNCONFIGURED;
+
+const listeners = new Set<() => void>();
+let initialized = false;
+
+function emit() {
+  listeners.forEach((listener) => listener());
+}
+
+function scheduleEmit() {
+  if (listeners.size === 0) {
+    return;
+  }
+  queueMicrotask(emit);
+}
+
+function subscribe(listener: () => void) {
+  listeners.add(listener);
+  if (!initialized) {
+    queueMicrotask(() => initAuthStore());
+  }
+  return () => listeners.delete(listener);
+}
+
+function getSnapshot(): AuthStore {
+  return store;
+}
+
+function getServerSnapshot(): AuthStore {
+  return isSupabaseConfigured() ? SERVER_SNAPSHOT_CONFIGURED : SERVER_SNAPSHOT_UNCONFIGURED;
+}
+
+function patchStore(patch: Partial<AuthStore>) {
+  if (
+    (patch.user === undefined || patch.user === store.user) &&
+    (patch.loading === undefined || patch.loading === store.loading) &&
+    (patch.isAdmin === undefined || patch.isAdmin === store.isAdmin)
+  ) {
+    return;
+  }
+
+  store = { ...store, ...patch };
+  scheduleEmit();
+}
+
+function initAuthStore() {
+  if (initialized || typeof window === "undefined") {
+    return;
+  }
+  initialized = true;
+
+  if (!isSupabaseConfigured()) {
+    patchStore({ loading: false });
+    return;
+  }
+
+  const supabase = createClient();
+  let profileUserId: string | null = null;
+
+  const loadProfile = async (userId: string) => {
+    if (profileUserId === userId) {
+      return;
+    }
+    profileUserId = userId;
+
+    const { data } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+
+    patchStore({ isAdmin: data?.role === "admin" });
+  };
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (
+      event !== "INITIAL_SESSION" &&
+      event !== "SIGNED_IN" &&
+      event !== "SIGNED_OUT" &&
+      event !== "TOKEN_REFRESHED"
+    ) {
       return;
     }
 
-    let mounted = true;
+    const nextUser = toAuthenticatedUser(session?.user);
+    const userChanged =
+      store.user?.id !== nextUser?.id || store.user?.email !== nextUser?.email;
 
-    const loadProfile = async (userId: string) => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", userId)
-        .maybeSingle();
+    if (userChanged) {
+      patchStore({
+        user: nextUser,
+        isAdmin: nextUser ? store.isAdmin : false,
+      });
+    }
 
-      if (mounted) {
-        setIsAdmin(data?.role === "admin");
+    if (nextUser) {
+      if (event !== "TOKEN_REFRESHED" || userChanged) {
+        void loadProfile(nextUser.id);
       }
-    };
+    } else {
+      profileUserId = null;
+      patchStore({ isAdmin: false });
+    }
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (!mounted) return;
+    if (event === "INITIAL_SESSION") {
+      patchStore({ loading: false });
+    }
+  });
+}
 
-      if (
-        event === "INITIAL_SESSION" ||
-        event === "SIGNED_IN" ||
-        event === "SIGNED_OUT" ||
-        event === "TOKEN_REFRESHED"
-      ) {
-        const nextUser = toAuthenticatedUser(session?.user);
-        setUser(nextUser);
-        if (nextUser) {
-          void loadProfile(nextUser.id);
-        } else {
-          setIsAdmin(false);
-        }
-      }
+function getBrowserSupabase() {
+  if (!isSupabaseConfigured()) {
+    return null;
+  }
 
-      if (event === "INITIAL_SESSION") {
-        setLoading(false);
-      }
-    });
+  try {
+    return createClient();
+  } catch {
+    return null;
+  }
+}
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, [supabase]);
+export function useAuthUser() {
+  const snapshot = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 
   return {
-    supabase,
-    user,
-    loading,
-    isAdmin,
-    isAuthenticated: Boolean(user),
+    supabase: getBrowserSupabase(),
+    user: snapshot.user,
+    loading: snapshot.loading,
+    isAdmin: snapshot.isAdmin,
+    isAuthenticated: Boolean(snapshot.user),
   };
 }

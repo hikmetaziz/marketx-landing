@@ -59,7 +59,15 @@ export async function createListing(
   let { data: inserted, error } = await supabase.from("listings").insert(payload).select("id").single();
 
   if (error?.message?.includes("delivery_available")) {
-    const { delivery_available: _drop, ...withoutDelivery } = payload;
+    const withoutDelivery = {
+      user_id: payload.user_id,
+      title: payload.title,
+      price: payload.price,
+      category: payload.category,
+      city: payload.city,
+      condition: payload.condition,
+      description: payload.description,
+    };
     const retry = await supabase.from("listings").insert(withoutDelivery).select("id").single();
     inserted = retry.data;
     error = retry.error;

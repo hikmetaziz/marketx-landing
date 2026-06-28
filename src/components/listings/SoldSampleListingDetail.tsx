@@ -6,10 +6,8 @@ import Link from "next/link";
 import { ListingDetailGallery } from "@/components/listings/ListingDetailGallery";
 import { ListingShareButton } from "@/components/listings/ListingShareButton";
 import { ListingViewDisplay } from "@/components/listings/ListingViewCount";
-import { ListingStatusBadge } from "@/components/listings/ListingStatusBadge";
-import { SampleListingFavoriteButton } from "@/components/listings/SampleListingFavoriteButton";
-import { SITE } from "@/constants/data";
 import { buildListingReportMailto } from "@/lib/listings/report";
+import { getListingPublicUrl } from "@/lib/listings/listing-url";
 import type { SampleListing } from "@/types/listing";
 
 type SoldSampleListingDetailProps = {
@@ -17,7 +15,7 @@ type SoldSampleListingDetailProps = {
 };
 
 export function SoldSampleListingDetail({ listing }: SoldSampleListingDetailProps) {
-  const listingUrl = `${SITE.url}/listings/${listing.slug}`;
+  const listingUrl = getListingPublicUrl(listing.slug);
   const reportMailto = buildListingReportMailto(listing.title, listingUrl);
 
   return (
@@ -29,7 +27,6 @@ export function SoldSampleListingDetail({ listing }: SoldSampleListingDetailProp
       <aside className="mt-6 lg:sticky lg:top-24 lg:mt-0">
         <div className="card-premium space-y-5 rounded-2xl p-5 sm:p-6 hover:translate-y-0">
           <div className="space-y-3">
-            <ListingStatusBadge status={listing.status} />
             <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-brand-text sm:text-[1.75rem]">
               {listing.title}
             </h1>
@@ -79,8 +76,7 @@ export function SoldSampleListingDetail({ listing }: SoldSampleListingDetailProp
             >
               Bu elan satılıb
             </button>
-            <SampleListingFavoriteButton listingId={listing.id} />
-            <ListingShareButton title={listing.title} variant="tertiary" />
+            <ListingShareButton title={listing.title} slug={listing.slug} shareUrl={listingUrl} variant="tertiary" />
           </div>
 
           <div className="flex flex-col gap-2.5 border-t border-brand-border/70 pt-5 sm:flex-row">

@@ -1,7 +1,6 @@
 import { Clock3, MapPin } from "lucide-react";
 import Link from "next/link";
 
-import { LiveListingStatusBadge } from "@/components/listings/LiveListingStatusBadge";
 import { ListingImage } from "@/components/ui/ListingImage";
 import { formatListingPrice, formatListingRelativeDate } from "@/lib/listings/format";
 import {
@@ -37,9 +36,6 @@ export function LiveListingCard({ listing }: LiveListingCardProps) {
                 </span>
               </div>
             )}
-            <div className="absolute left-2.5 top-2.5">
-              <LiveListingStatusBadge status={listing.status} />
-            </div>
           </div>
         </div>
 

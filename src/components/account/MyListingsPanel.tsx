@@ -5,10 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-import { markMyListingSold } from "@/app/account/listings/actions";
+import { markMyListingSold, renewMyListing } from "@/app/account/listings/actions";
+import { useMyListingsRealtimeRefresh } from "@/hooks/use-listing-realtime-refresh";
 import { ListingImage } from "@/components/ui/ListingImage";
-import { OwnerListingStatusBadge } from "@/components/listings/OwnerListingStatusBadge";
 import { dbCategoryToDisplay } from "@/lib/listings/category-map";
+import { getListingExpiryUi } from "@/lib/listings/expiry";
 import { formatListingDate, formatListingPrice, formatListingViewCount } from "@/lib/listings/format";
 import {
   getPrimaryListingImage,
@@ -32,6 +33,7 @@ function getPublicListingHref(listing: MyListing): string | null {
 
 export function MyListingsPanel({ listings }: MyListingsPanelProps) {
   const router = useRouter();
+  useMyListingsRealtimeRefresh();
   const [isPending, startTransition] = useTransition();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState("");
@@ -41,6 +43,20 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
     setActiveId(listingId);
     startTransition(async () => {
       const result = await markMyListingSold(listingId);
+      setActiveId(null);
+      if (!result.ok) {
+        setErrorMessage(result.error);
+        return;
+      }
+      router.refresh();
+    });
+  };
+
+  const runRenew = (listingId: string) => {
+    setErrorMessage("");
+    setActiveId(listingId);
+    startTransition(async () => {
+      const result = await renewMyListing(listingId);
       setActiveId(null);
       if (!result.ok) {
         setErrorMessage(result.error);
@@ -77,6 +93,7 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
           const primaryImage = getPrimaryListingImage(listing);
           const publicHref = getPublicListingHref(listing);
           const loading = isPending && activeId === listing.id;
+          const expiry = getListingExpiryUi(listing.expires_at, listing.status);
 
           return (
             <li
@@ -105,7 +122,6 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
 
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <OwnerListingStatusBadge status={listing.status} />
                     <span className="text-xs text-brand-muted">{formatListingDate(listing.created_at)}</span>
                   </div>
 
@@ -129,6 +145,18 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
                     </p>
                   ) : null}
 
+                  {expiry.label ? (
+                    <p
+                      className={
+                        expiry.isUrgent
+                          ? "rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                          : "text-sm text-brand-muted"
+                      }
+                    >
+                      {expiry.label}
+                    </p>
+                  ) : null}
+
                   <div className="flex flex-wrap gap-2 pt-1">
                     {publicHref ? (
                       <Link
@@ -149,6 +177,18 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
                       >
                         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                         Satıldı et
+                      </button>
+                    ) : null}
+
+                    {expiry.canRenew ? (
+                      <button
+                        type="button"
+                        disabled={loading}
+                        onClick={() => runRenew(listing.id)}
+                        className="inline-flex items-center gap-2 rounded-xl border border-brand-primary/30 bg-brand-primary-light px-3 py-2 text-sm font-semibold text-brand-primary-dark hover:border-brand-primary/50 disabled:opacity-70"
+                      >
+                        {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                        Yenilə (+30 gün)
                       </button>
                     ) : null}
                   </div>

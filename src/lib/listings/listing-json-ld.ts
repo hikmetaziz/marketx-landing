@@ -1,4 +1,5 @@
 import { SITE } from "@/constants/data";
+import { getListingPublicUrl } from "@/lib/listings/listing-url";
 import { formatListingPrice } from "@/lib/listings/format";
 import { truncateListingDescription, toAbsoluteImageUrl } from "@/lib/listings/listing-seo";
 import { getDefaultOgImageUrl } from "@/lib/seo-assets";
@@ -16,7 +17,7 @@ export type ListingJsonLdInput = {
 };
 
 export function buildListingJsonLd(listing: ListingJsonLdInput) {
-  const listingUrl = `${SITE.url}/listings/${listing.slug}`;
+  const listingUrl = getListingPublicUrl(listing.slug);
   const image = toAbsoluteImageUrl(listing.imageUrl) ?? getDefaultOgImageUrl();
   const description =
     truncateListingDescription(listing.description) ||

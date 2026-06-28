@@ -1,4 +1,4 @@
-import { LayoutGrid, Sparkles } from "lucide-react";
+import { LayoutGrid } from "lucide-react";
 import Link from "next/link";
 
 import { BrandName } from "@/components/BrandLogo";
@@ -8,12 +8,6 @@ export function HeroSection() {
   return (
     <section className="relative z-10 pb-10 pt-14 sm:pt-18 lg:pt-22" aria-labelledby="hero-heading">
       <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-        {/* AI badge */}
-        <p className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3.5 py-1.5 text-sm text-white/85 backdrop-blur-sm">
-          <Sparkles className="h-4 w-4 text-amber-300" aria-hidden="true" />
-          {HERO.subtitleNote}
-        </p>
-
         {/* Başlıq */}
         <h1
           id="hero-heading"

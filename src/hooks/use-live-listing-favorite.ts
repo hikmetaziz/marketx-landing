@@ -8,6 +8,7 @@ import {
   isListingFavorited,
   removeListingFavorite,
 } from "@/lib/listings/supabase-favorites";
+import { subscribeToListingFavorite } from "@/lib/listings/favorites-realtime";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useAuthUser } from "@/lib/supabase/use-auth-user";
 
@@ -23,14 +24,16 @@ export function useLiveListingFavorite(listingId: string) {
   const canFetchFavorites =
     favoritesAvailable && isAuthenticated && !authLoading && Boolean(supabase && user);
 
+  const userId = user?.id;
+
   useEffect(() => {
-    if (!canFetchFavorites || !supabase || !user) {
+    if (!canFetchFavorites || !supabase || !userId) {
       return;
     }
 
     let mounted = true;
 
-    void isListingFavorited(supabase, listingId, user.id).then((value) => {
+    void isListingFavorited(supabase, listingId, userId).then((value) => {
       if (mounted) {
         setFavorited(value);
         setLoaded(true);
@@ -40,7 +43,18 @@ export function useLiveListingFavorite(listingId: string) {
     return () => {
       mounted = false;
     };
-  }, [canFetchFavorites, listingId, supabase, user]);
+  }, [canFetchFavorites, listingId, supabase, userId]);
+
+  useEffect(() => {
+    if (!canFetchFavorites || !supabase || !userId) {
+      return;
+    }
+
+    return subscribeToListingFavorite(supabase, userId, listingId, (nextFavorited) => {
+      setFavorited(nextFavorited);
+      setLoaded(true);
+    });
+  }, [canFetchFavorites, listingId, supabase, userId]);
 
   const requireLogin = useCallback(() => {
     const returnTo = pathname || "/listings";

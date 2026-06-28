@@ -13,4 +13,6 @@ export const LISTING_CATEGORIES = [
 
 export const CITY_OPTIONS = ["Bakı", "Gəncə", "Sumqayıt", "Mingəçevir", "Şəki", "Lənkəran", "Digər"] as const;
 
+export const LISTING_CONDITIONS = ["Yeni", "İşlənmiş"] as const;
+
 export const MAX_LISTING_IMAGES = 6;

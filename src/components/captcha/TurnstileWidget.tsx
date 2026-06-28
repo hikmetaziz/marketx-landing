@@ -30,7 +30,16 @@ declare global {
 export function TurnstileWidget({ onToken, onExpire, onError }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const widgetIdRef = useRef<string | null>(null);
+  const onTokenRef = useRef(onToken);
+  const onExpireRef = useRef(onExpire);
+  const onErrorRef = useRef(onError);
   const siteKey = getTurnstileSiteKey();
+
+  useEffect(() => {
+    onTokenRef.current = onToken;
+    onExpireRef.current = onExpire;
+    onErrorRef.current = onError;
+  }, [onToken, onExpire, onError]);
 
   useEffect(() => {
     if (!siteKey || !containerRef.current) {
@@ -50,9 +59,9 @@ export function TurnstileWidget({ onToken, onExpire, onError }: TurnstileWidgetP
 
       widgetIdRef.current = window.turnstile.render(containerRef.current, {
         sitekey: siteKey,
-        callback: onToken,
-        "expired-callback": onExpire,
-        "error-callback": onError,
+        callback: (token) => onTokenRef.current(token),
+        "expired-callback": () => onExpireRef.current?.(),
+        "error-callback": () => onErrorRef.current?.(),
       });
     };
 
@@ -73,7 +82,7 @@ export function TurnstileWidget({ onToken, onExpire, onError }: TurnstileWidgetP
         widgetIdRef.current = null;
       }
     };
-  }, [siteKey, onToken, onExpire, onError]);
+  }, [siteKey]);
 
   if (!siteKey) {
     return null;

@@ -12,6 +12,7 @@ import {
   getListingImages,
   getPrimaryListingImage,
 } from "@/lib/listings/listing-images";
+import type { ListingSearchFilters } from "@/lib/listings/search";
 import type { ListingRow, LiveListing, LiveListingDetailView, ListingStatus, PublicListingStatus } from "@/types/live-listing";
 
 export { formatListingDate, formatListingPrice, formatListingRelativeDate };
@@ -141,6 +142,73 @@ export async function getActiveListings(limit?: number): Promise<LiveListing[]> 
     .in("status", PUBLIC_STATUSES)
     .not("slug", "is", null)
     .order("created_at", { ascending: false });
+
+  if (limit) {
+    query = query.limit(limit);
+  }
+
+  const { data, error } = await query;
+
+  if (error || !data) {
+    return [];
+  }
+
+  return (data as ListingRow[]).map(mapRow).filter((row): row is LiveListing => row !== null);
+}
+
+export async function searchListings(
+  filters: ListingSearchFilters,
+  limit?: number,
+): Promise<LiveListing[]> {
+  const supabase = await getSupabaseClient();
+  if (!supabase) {
+    return [];
+  }
+
+  let query = supabase
+    .from("listings")
+    .select(LISTING_SELECT)
+    .in("status", PUBLIC_STATUSES)
+    .not("slug", "is", null);
+
+  if (filters.q.length >= 2) {
+    const pattern = `%${filters.q}%`;
+    query = query.or(
+      `title.ilike.${pattern},description.ilike.${pattern},category.ilike.${pattern},city.ilike.${pattern}`,
+    );
+  }
+
+  if (filters.category) {
+    const dbCategories = getDbCategoriesForSlug(filters.category);
+    if (dbCategories.length === 0) {
+      return [];
+    }
+    query = query.in("category", dbCategories);
+  }
+
+  if (filters.city) {
+    query = query.eq("city", filters.city);
+  }
+
+  if (filters.condition) {
+    query = query.eq("condition", filters.condition);
+  }
+
+  if (filters.minPrice !== null) {
+    query = query.gte("price", filters.minPrice);
+  }
+
+  if (filters.maxPrice !== null) {
+    query = query.lte("price", filters.maxPrice);
+  }
+
+  if (filters.sort === "price_asc") {
+    query = query.order("price", { ascending: true }).order("created_at", { ascending: false });
+  } else if (filters.sort === "price_desc") {
+    query = query.order("price", { ascending: false }).order("created_at", { ascending: false });
+  } else {
+    query = query.order("created_at", { ascending: false });
+  }
 
   if (limit) {
     query = query.limit(limit);

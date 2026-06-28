@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, ClipboardList, Plus, Shield, User as UserIcon } from "lucide-react";
+import { LogOut, ClipboardList, MessageCircle, Plus, Shield, User as UserIcon } from "lucide-react";
 import Link from "next/link";
 
 import { useAuthUser } from "@/lib/supabase/use-auth-user";
@@ -51,6 +51,13 @@ export function HeaderAuthActions({ mobile = false, onNavigate }: HeaderAuthActi
             </Link>
           ) : null}
           <Link
+            href="/account/messages"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-brand-border text-sm font-semibold"
+            onClick={onNavigate}
+          >
+            <MessageCircle className="h-4 w-4" /> Mesajlar
+          </Link>
+          <Link
             href="/account/listings"
             className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-brand-border text-sm font-semibold"
             onClick={onNavigate}
@@ -92,6 +99,13 @@ export function HeaderAuthActions({ mobile = false, onNavigate }: HeaderAuthActi
             Moderasiya
           </Link>
         ) : null}
+        <Link
+          href="/account/messages"
+          className="inline-flex h-10 items-center gap-2 rounded-xl border border-brand-border bg-white px-3 text-sm font-semibold text-brand-text transition-colors hover:border-brand-primary/40 hover:text-brand-primary"
+        >
+          <MessageCircle className="h-4 w-4" />
+          <span className="hidden 2xl:inline">Mesajlar</span>
+        </Link>
         <Link
           href="/account/listings"
           className="inline-flex h-10 items-center gap-2 rounded-xl border border-brand-border bg-white px-3 text-sm font-semibold text-brand-text transition-colors hover:border-brand-primary/40 hover:text-brand-primary"

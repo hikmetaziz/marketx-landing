@@ -42,4 +42,5 @@ export type ListingRow = {
   view_count: number;
   created_at: string;
   updated_at: string | null;
+  expires_at?: string | null;
 };

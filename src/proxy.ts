@@ -42,7 +42,7 @@ function redirectRecoveryParamsToResetPassword(request: NextRequest): NextRespon
   return NextResponse.redirect(url);
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const tokenHashRedirect = redirectTokenHashToRecoveryRoute(request);
   if (tokenHashRedirect) {
     return tokenHashRedirect;

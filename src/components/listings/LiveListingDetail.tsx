@@ -3,14 +3,17 @@
 import { ShieldCheck } from "lucide-react";
 import Link from "next/link";
 
+import { useListingDetailRealtimeRefresh } from "@/hooks/use-listing-realtime-refresh";
+
 import { LiveListingFavoriteButton } from "@/components/listings/LiveListingFavoriteButton";
-import { LiveListingStatusBadge } from "@/components/listings/LiveListingStatusBadge";
+import { ListingMessageButton } from "@/components/messaging/ListingMessageButton";
 import { ListingDetailGallery } from "@/components/listings/ListingDetailGallery";
 import { ListingDetailMetadata } from "@/components/listings/ListingDetailMetadata";
 import { ListingPhoneReveal } from "@/components/listings/ListingPhoneReveal";
+import { OpenInAppLink } from "@/components/listings/OpenInAppLink";
 import { ListingShareButton } from "@/components/listings/ListingShareButton";
 import { ListingViewCount } from "@/components/listings/ListingViewCount";
-import { SITE } from "@/constants/data";
+import { getListingPublicUrl } from "@/lib/listings/listing-url";
 import { dbCategoryToDisplay } from "@/lib/listings/category-map";
 import { formatListingPrice, formatListingRelativeDate } from "@/lib/listings/format";
 import { buildListingReportMailto } from "@/lib/listings/report";
@@ -39,8 +42,9 @@ function DescriptionCard({
 }
 
 export function LiveListingDetail({ listing, hasContactPhone }: LiveListingDetailProps) {
+  useListingDetailRealtimeRefresh(listing.id);
   const isSold = listing.status === "sold";
-  const listingUrl = `${SITE.url}/listings/${listing.slug}`;
+  const listingUrl = getListingPublicUrl(listing.slug);
   const reportMailto = buildListingReportMailto(listing.title, listingUrl);
 
   const metadataItems = [
@@ -60,7 +64,6 @@ export function LiveListingDetail({ listing, hasContactPhone }: LiveListingDetai
       <aside className="mt-6 space-y-6 lg:sticky lg:top-24 lg:mt-0">
         <div className="card-premium space-y-5 rounded-2xl p-5 sm:p-6 hover:translate-y-0">
           <div className="space-y-3">
-            <LiveListingStatusBadge status={listing.status} />
             <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-brand-text sm:text-[1.75rem]">
               {listing.title}
             </h1>
@@ -103,8 +106,20 @@ export function LiveListingDetail({ listing, hasContactPhone }: LiveListingDetai
               status={listing.status}
               hasContactPhone={hasContactPhone}
             />
+            <ListingMessageButton
+              listingId={listing.id}
+              sellerId={listing.user_id}
+              slug={listing.slug}
+              status={listing.status}
+            />
             <LiveListingFavoriteButton key={listing.id} listingId={listing.id} />
-            <ListingShareButton title={listing.title} variant="tertiary" />
+            <OpenInAppLink slug={listing.slug} />
+            <ListingShareButton
+              title={listing.title}
+              slug={listing.slug}
+              shareUrl={listingUrl}
+              variant="tertiary"
+            />
           </div>
 
           <div className="flex flex-col gap-2.5 border-t border-brand-border/70 pt-5 sm:flex-row">

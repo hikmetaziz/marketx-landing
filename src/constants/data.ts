@@ -7,7 +7,7 @@ export const SITE = {
   legalScope: "MarktX veb-saytı",
   footerTagline: "Online elan platforması.",
   officialSiteNote: "MarktX platformasının rəsmi saytı: marketx.az",
-  aiNote: "Süni intellekt imkanları tezliklə",
+  aiNote: "",
 } as const;
 
 export const LEGAL_LINKS = [
@@ -21,7 +21,7 @@ export const HERO = {
   headlineBrand: "MarktX",
   headlineAfter: "-la daha asan.",
   subtitle: "Online elan platforması",
-  subtitleNote: "Süni intellekt imkanları tezliklə",
+  subtitleNote: "",
   primaryCta: { label: "Kateqoriyalara bax", href: "/categories" },
   secondaryCta: { label: "Necə işləyir?", href: "/how-it-works" },
 } as const;

@@ -1,8 +1,6 @@
 import { Clock3, MapPin } from "lucide-react";
 import Link from "next/link";
 
-import { ListingFavoriteButton } from "@/components/listings/ListingFavoriteButton";
-import { ListingStatusBadge } from "@/components/listings/ListingStatusBadge";
 import { ListingImage } from "@/components/ui/ListingImage";
 import { getPrimaryListingImage } from "@/lib/listings/listing-images";
 import type { SampleListing } from "@/types/listing";
@@ -15,7 +13,7 @@ export function SampleListingCard({ listing }: SampleListingCardProps) {
   const primaryImage = getPrimaryListingImage(listing);
 
   return (
-    <article className="card-premium group relative overflow-hidden rounded-2xl">
+    <article className="card-premium overflow-hidden rounded-2xl">
       <Link
         href={`/listings/${listing.slug}`}
         className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 focus-visible:ring-offset-2"
@@ -33,9 +31,6 @@ export function SampleListingCard({ listing }: SampleListingCardProps) {
                 </span>
               </div>
             )}
-            <div className="absolute left-2.5 top-2.5">
-              <ListingStatusBadge status={listing.status} />
-            </div>
           </div>
         </div>
 
@@ -58,12 +53,6 @@ export function SampleListingCard({ listing }: SampleListingCardProps) {
           </div>
         </div>
       </Link>
-
-      <ListingFavoriteButton
-        listingId={listing.id}
-        title={listing.title}
-        className="absolute right-5 top-5 z-10 group-hover:scale-105"
-      />
     </article>
   );
 }

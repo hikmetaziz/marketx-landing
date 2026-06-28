@@ -3,21 +3,28 @@
 import { Share2 } from "lucide-react";
 import { useState } from "react";
 
+import { getListingPublicUrl } from "@/lib/listings/listing-url";
+
 type ListingShareButtonProps = {
   title: string;
+  /** Canonical marketx.az URL — localhost paylaşımını qarşısını alır. */
+  shareUrl?: string;
+  slug?: string;
   className?: string;
   variant?: "default" | "tertiary";
 };
 
 export function ListingShareButton({
   title,
+  shareUrl,
+  slug,
   className = "",
   variant = "default",
 }: ListingShareButtonProps) {
   const [shareMessage, setShareMessage] = useState("");
 
   const handleShare = async () => {
-    const url = window.location.href;
+    const url = shareUrl ?? (slug ? getListingPublicUrl(slug) : window.location.href);
 
     try {
       if (navigator.share) {

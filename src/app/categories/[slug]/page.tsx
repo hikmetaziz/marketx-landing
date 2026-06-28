@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 
 import { LiveListingCard } from "@/components/listings/LiveListingCard";
 import { SampleListingCard } from "@/components/listings/SampleListingCard";
@@ -48,7 +47,24 @@ export default async function CategorySlugPage({ params }: Props) {
   const label = slugToCategory(slug);
 
   if (!label) {
-    notFound();
+    return (
+      <PageShell
+        title="Səhifə tapılmadı"
+        subtitle="Axtardığınız kateqoriya tapılmadı."
+      >
+        <div className="rounded-2xl border border-brand-border/90 bg-brand-surface/60 p-6 text-center">
+          <p className="text-sm leading-relaxed text-brand-muted">
+            Link səhv ola bilər və ya kateqoriya artıq mövcud deyil.
+          </p>
+          <Link
+            href="/categories"
+            className="btn-primary-premium mt-4 inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white"
+          >
+            Kateqoriyalara qayıt
+          </Link>
+        </div>
+      </PageShell>
+    );
   }
 
   const liveListings = await getListingsByCategorySlug(slug);

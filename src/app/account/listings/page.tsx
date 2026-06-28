@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
+import { AccountSubnav } from "@/components/account/AccountSubnav";
 import { MyListingsPanel } from "@/components/account/MyListingsPanel";
 import { PageShell } from "@/components/layout/PageShell";
 import { getMyListings } from "@/lib/listings/my-listings";
@@ -11,7 +12,7 @@ import { getAuthenticatedUser } from "@/lib/supabase/session";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Mənim elanlarım",
-  description: "MarktX-də yerləşdirdiyiniz elanların statusu.",
+  description: "MarktX-də yerləşdirdiyiniz elanlar.",
   path: "/account/listings",
   noIndex: true,
 });
@@ -32,8 +33,9 @@ export default async function MyListingsPage() {
     <PageShell
       wide
       title="Mənim elanlarım"
-      subtitle="Elanlarınızın statusunu izləyin. Aktiv elanları satıldı edə bilərsiniz."
+      subtitle="Yerləşdirdiyiniz elanları idarə edin."
     >
+      <AccountSubnav active="listings" />
       <div className="mb-6">
         <Link
           href="/create-listing"

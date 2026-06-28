@@ -7,7 +7,7 @@ update public.profiles
 set
   role = 'admin',
   updated_at = now()
-where email = 'admin@marketx.az';
+where email = 'admin@marktx.az';
 
 -- Yoxlama: admin siyahısı
 select id, email, display_name, role, created_at

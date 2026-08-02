@@ -1,5 +1,8 @@
-import { CITY_OPTIONS, LISTING_CATEGORIES, MAX_LISTING_IMAGES } from "@/constants/listings";
+import { MAX_LISTING_IMAGES } from "@/constants/listings";
+import { isCityValue } from "@/lib/constants/cities";
 import { isValidContactPhone, normalizeContactPhone } from "@/lib/contact-phone";
+import { isUuid } from "@/lib/taxonomy/listing-taxonomy-utils";
+import type { ListingAttributeValues } from "@/lib/taxonomy/listing-taxonomy-types";
 
 const TITLE_MIN = 3;
 const TITLE_MAX = 120;
@@ -8,9 +11,12 @@ const PRICE_MIN = 1;
 const PRICE_MAX = 9_999_999;
 
 export type CreateListingInput = {
+  storeId: string | null;
   title: string;
   price: number;
-  category: string;
+  categoryId: string;
+  subcategoryId: string | null;
+  attributes: ListingAttributeValues;
   city: string;
   condition: "Yeni" | "İşlənmiş";
   description: string | null;
@@ -18,26 +24,65 @@ export type CreateListingInput = {
   deliveryAvailable: boolean;
 };
 
-export type ParsedCreateListingInput = CreateListingInput;
+export type ParsedCreateListingInput = CreateListingInput & {
+  category: string;
+  conditionCode: "new" | "good";
+  sanitizedAttributes: Record<string, string | number | boolean | string[]>;
+};
 
 type ParseResult =
-  | { ok: true; data: ParsedCreateListingInput }
+  | { ok: true; data: Omit<ParsedCreateListingInput, "category" | "conditionCode" | "sanitizedAttributes"> }
   | { ok: false; error: string };
 
-function isListingCategory(value: string): value is (typeof LISTING_CATEGORIES)[number] {
-  return (LISTING_CATEGORIES as readonly string[]).includes(value);
+type ParseCreateListingOptions = {
+  requireStoreId?: boolean;
+};
+
+function isCityOption(value: string): boolean {
+  return isCityValue(value);
 }
 
-function isCityOption(value: string): value is (typeof CITY_OPTIONS)[number] {
-  return (CITY_OPTIONS as readonly string[]).includes(value);
+function parseAttributes(raw: unknown): ListingAttributeValues {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+    return {};
+  }
+
+  const result: ListingAttributeValues = {};
+  for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
+    if (
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean" ||
+      value === null ||
+      (Array.isArray(value) && value.every((item) => typeof item === "string"))
+    ) {
+      result[key] = value as ListingAttributeValues[string];
+    }
+  }
+  return result;
 }
 
-export function parseCreateListingInput(raw: unknown): ParseResult {
+export function parseCreateListingInput(
+  raw: unknown,
+  options: ParseCreateListingOptions = {},
+): ParseResult {
   if (!raw || typeof raw !== "object") {
     return { ok: false, error: "Form məlumatları yanlışdır." };
   }
 
   const input = raw as Record<string, unknown>;
+  const storeIdRaw = typeof input.storeId === "string" ? input.storeId.trim() : "";
+  const storeId = storeIdRaw || null;
+
+  if (options.requireStoreId && !storeId) {
+    return {
+      ok: false,
+      error: "Elan yerləşdirmək üçün mağaza girişiniz admin tərəfindən aktivləşdirilməlidir.",
+    };
+  }
+  if (storeId && !isUuid(storeId)) {
+    return { ok: false, error: "Mağaza seçimi yanlışdır." };
+  }
 
   const title = typeof input.title === "string" ? input.title.trim() : "";
   if (title.length < TITLE_MIN) {
@@ -59,9 +104,15 @@ export function parseCreateListingInput(raw: unknown): ParseResult {
     return { ok: false, error: "Qiymət düzgün rəqəm olmalıdır." };
   }
 
-  const category = typeof input.category === "string" ? input.category : "";
-  if (!isListingCategory(category)) {
+  const categoryId = typeof input.categoryId === "string" ? input.categoryId.trim() : "";
+  if (!isUuid(categoryId)) {
     return { ok: false, error: "Kateqoriya seçin." };
+  }
+
+  const subcategoryRaw = typeof input.subcategoryId === "string" ? input.subcategoryId.trim() : "";
+  const subcategoryId = subcategoryRaw ? subcategoryRaw : null;
+  if (subcategoryId && !isUuid(subcategoryId)) {
+    return { ok: false, error: "Alt kateqoriya seçimi yanlışdır." };
   }
 
   const city = typeof input.city === "string" ? input.city : "";
@@ -86,9 +137,12 @@ export function parseCreateListingInput(raw: unknown): ParseResult {
   return {
     ok: true,
     data: {
+      storeId,
       title,
       price: Math.round(price),
-      category,
+      categoryId,
+      subcategoryId,
+      attributes: parseAttributes(input.attributes),
       city,
       condition,
       description,
@@ -98,9 +152,9 @@ export function parseCreateListingInput(raw: unknown): ParseResult {
   };
 }
 
-export function validateListingImageCount(count: number): string | null {
-  if (count > MAX_LISTING_IMAGES) {
-    return `Maksimum ${MAX_LISTING_IMAGES} şəkil əlavə edə bilərsiniz.`;
+export function validateListingImageCount(count: number, maxCount = MAX_LISTING_IMAGES): string | null {
+  if (count > maxCount) {
+    return `Maksimum ${maxCount} şəkil əlavə edə bilərsiniz.`;
   }
   return null;
 }

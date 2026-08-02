@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 import { getSupabaseAnonKey, getSupabaseUrl } from "@/lib/supabase/env";
 
-const AUTH_PATH_PREFIXES = ["/admin", "/account", "/create-listing", "/auth"] as const;
+const AUTH_PATH_PREFIXES = ["/admin", "/account", "/elan-yarat", "/create-listing", "/auth"] as const;
 const AUTH_EXACT_PATHS = new Set(["/login", "/reset-password"]);
 
 function isAuthSensitivePath(pathname: string): boolean {
@@ -18,6 +18,20 @@ function isAuthSensitivePath(pathname: string): boolean {
 
 function hasSupabaseSessionCookie(request: NextRequest): boolean {
   return request.cookies.getAll().some(({ name }) => name.startsWith("sb-") && name.includes("auth"));
+}
+
+function clearSupabaseSessionCookies(request: NextRequest, response: NextResponse) {
+  request.cookies.getAll().forEach(({ name }) => {
+    if (!name.startsWith("sb-")) {
+      return;
+    }
+
+    request.cookies.delete(name);
+    response.cookies.set(name, "", {
+      path: "/",
+      maxAge: 0,
+    });
+  });
 }
 
 export async function updateSession(request: NextRequest) {
@@ -53,7 +67,10 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getUser();
+  const { error } = await supabase.auth.getUser();
+  if (error) {
+    clearSupabaseSessionCookies(request, supabaseResponse);
+  }
 
   return supabaseResponse;
 }

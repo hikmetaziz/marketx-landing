@@ -1,44 +1,38 @@
-import { LayoutGrid } from "lucide-react";
-import Link from "next/link";
-
-import { BrandName } from "@/components/BrandLogo";
-import { HERO } from "@/constants/data";
+import Image from "next/image";
 
 export function HeroSection() {
   return (
-    <section className="relative z-10 pb-10 pt-14 sm:pt-18 lg:pt-22" aria-labelledby="hero-heading">
-      <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-        {/* Başlıq */}
-        <h1
-          id="hero-heading"
-          className="text-[2.6rem] font-extrabold leading-[1.06] tracking-[-0.035em] text-white sm:text-[3.5rem] lg:text-[4.4rem]"
-        >
-          {HERO.headlineBefore}
-          <BrandName />
-          {HERO.headlineAfter}
-        </h1>
+    <section
+      className="relative isolate mx-auto min-h-[510px] max-w-[1180px] overflow-hidden border-b border-brand-border bg-white"
+      aria-labelledby="hero-heading"
+    >
+      <Image
+        src="/images/home/marktx-marketplace-hero-v2.webp"
+        alt=""
+        fill
+        priority
+        sizes="(min-width: 1440px) 1180px, 100vw"
+        className="object-cover object-[15%_center] sm:object-[22%_center] lg:object-center"
+      />
 
-        {/* Subtitle */}
-        <p className="mx-auto mt-4 max-w-lg text-lg leading-relaxed text-white/75 sm:text-xl">
-          {HERO.subtitle}
-        </p>
+      <div className="relative z-10 flex min-h-[510px] items-start px-4 pb-16 pt-11 sm:px-6 sm:pb-20 sm:pt-14 lg:px-7 lg:pt-16">
+        <div className="max-w-[620px]">
+          <p className="mb-5 inline-flex items-center rounded-lg border border-brand-primary/25 bg-brand-primary-light/30 px-3 py-1.5 text-sm font-bold text-brand-primary-dark">
+            MarktX — Elan və mağazalar bir yerdə
+          </p>
 
-        {/* CTA buttons */}
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-          <Link
-            href={HERO.primaryCta.href}
-            className="btn-primary-premium inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-black/25"
+          <h1
+            id="hero-heading"
+            className="max-w-[540px] text-4xl font-extrabold leading-[1.08] text-[#0b1f3a] sm:text-5xl lg:text-[50px]"
           >
-            <LayoutGrid className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
-            {HERO.primaryCta.label}
-          </Link>
-          <Link
-            href={HERO.secondaryCta.href}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-8 py-3.5 text-base font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20 hover:border-white/50"
-          >
-            <LayoutGrid className="h-4 w-4 text-white/70" aria-hidden="true" />
-            {HERO.secondaryCta.label}
-          </Link>
+            <span className="block">Axtar, tap, əlaqə saxla.</span>
+            <span className="mt-2 block text-[#173b69]">Asan. Sürətli. Etibarlı.</span>
+          </h1>
+
+          <p className="mt-6 max-w-[500px] text-base leading-7 text-brand-muted sm:text-lg">
+            Məhsul, xidmət və mağazaları bir platformada kəşf edin. Kateqoriyanı seçin,
+            elanları müqayisə edin və birbaşa əlaqə saxlayın.
+          </p>
         </div>
       </div>
     </section>

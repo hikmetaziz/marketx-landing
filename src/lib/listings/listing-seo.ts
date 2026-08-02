@@ -14,6 +14,7 @@ export type ListingSeoInput = {
   price: number;
   slug: string;
   imageUrl: string | null;
+  canonicalPath?: string;
 };
 
 export function truncateListingDescription(
@@ -46,21 +47,23 @@ export function toAbsoluteImageUrl(url: string | null | undefined): string | und
 }
 
 export function createPublicListingMetadata(listing: ListingSeoInput): Metadata {
-  const path = `/listings/${listing.slug}`;
+  const path = listing.canonicalPath ?? `/elanlar/${listing.slug}`;
   const truncatedDescription = truncateListingDescription(listing.description);
   const price = formatListingPrice(listing.price);
+  const seoTitle = `${listing.title} - ${price}`;
   const description =
-    truncatedDescription || `${listing.title} — ${price}. MarktX elan platforması.`;
+    truncatedDescription || `${listing.title} - ${price}. MarktX elan platforması.`;
   const ogImage = toAbsoluteImageUrl(listing.imageUrl);
   const ogImageMeta = ogImage
     ? { url: ogImage, alt: listing.title }
     : getDefaultOgImageMetadata(listing.title);
+  const ogTitle = `${seoTitle} | ${SITE.name}`;
   const ogDescription = truncatedDescription
-    ? `${truncatedDescription} — ${price}`
-    : `${listing.title} — ${price}`;
+    ? `${truncatedDescription} - ${price}`
+    : `${listing.title} - ${price}`;
 
   const base = createPageMetadata({
-    title: listing.title,
+    title: seoTitle,
     description,
     path,
   });
@@ -69,22 +72,22 @@ export function createPublicListingMetadata(listing: ListingSeoInput): Metadata 
     ...base,
     openGraph: {
       ...base.openGraph,
-      title: `${listing.title} | ${SITE.name}`,
+      title: ogTitle,
       description: ogDescription,
       images: [ogImageMeta],
     },
     twitter: {
       ...base.twitter,
-      title: `${listing.title} | ${SITE.name}`,
+      title: ogTitle,
       description: ogDescription,
       images: [ogImageMeta.url],
     },
   };
 }
 
-export function createNonPublicListingMetadata(slug: string): Metadata {
+export function createNonPublicListingMetadata(slug: string, canonicalPath?: string): Metadata {
   return {
     robots: { index: false, follow: false },
-    alternates: { canonical: `/listings/${slug}` },
+    alternates: { canonical: canonicalPath ?? `/elanlar/${slug}` },
   };
 }

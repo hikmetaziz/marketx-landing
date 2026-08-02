@@ -99,6 +99,7 @@ const ADMIN_STATUS_FILTERS: AdminListingStatusFilter[] = [
   "sold",
   "rejected",
   "archived",
+  "deleted",
   "all",
 ];
 

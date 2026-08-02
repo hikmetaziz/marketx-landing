@@ -26,7 +26,7 @@ export default function NotFound() {
           Ana səhifə
         </Link>
         <Link
-          href="/listings"
+          href="/elanlar"
           className="inline-flex items-center justify-center rounded-xl border border-brand-border px-6 py-3 text-sm font-semibold text-brand-text hover:border-brand-primary/40 hover:text-brand-primary"
         >
           Elanlar

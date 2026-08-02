@@ -19,7 +19,7 @@ export function getListingExpiryUi(
   expiresAt: string | null,
   status: ListingStatus,
 ): ListingExpiryUi {
-  if (!expiresAt || status === "pending" || status === "rejected" || status === "sold") {
+  if (!expiresAt || status === "pending" || status === "rejected" || status === "sold" || status === "deleted") {
     return { daysLeft: null, label: null, canRenew: false, isUrgent: false };
   }
 

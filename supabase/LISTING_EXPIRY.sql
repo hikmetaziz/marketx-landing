@@ -9,6 +9,8 @@
 
 -- ── 1) Column + backfill ──────────────────────────────────────────────────────
 
+alter type public.listing_status add value if not exists 'deleted';
+
 alter table public.listings add column if not exists expires_at timestamptz;
 
 comment on column public.listings.expires_at is
@@ -68,6 +70,10 @@ begin
 
   if new.status is distinct from old.status then
     if old.status = 'active' and new.status = 'sold' then
+      null;
+    elsif old.status in ('active', 'sold') and new.status = 'archived' then
+      null;
+    elsif old.status in ('pending', 'active', 'sold', 'rejected', 'archived') and new.status = 'deleted' then
       null;
     else
       raise exception 'Status change not permitted';
@@ -154,7 +160,8 @@ begin
     set
       expires_at = now() + interval '30 days',
       updated_at = now()
-    where id = p_listing_id;
+    where id = p_listing_id
+      and user_id = auth.uid();
 
     return;
   end if;
@@ -167,7 +174,8 @@ begin
       status = 'active',
       expires_at = now() + interval '30 days',
       updated_at = now()
-    where id = p_listing_id;
+    where id = p_listing_id
+      and user_id = auth.uid();
 
     return;
   end if;

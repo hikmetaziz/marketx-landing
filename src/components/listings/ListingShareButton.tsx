@@ -3,10 +3,12 @@
 import { Share2 } from "lucide-react";
 import { useState } from "react";
 
+import { formatListingPrice } from "@/lib/listings/format";
 import { getListingPublicUrl } from "@/lib/listings/listing-url";
 
 type ListingShareButtonProps = {
   title: string;
+  price: number | string;
   /** Canonical marketx.az URL — localhost paylaşımını qarşısını alır. */
   shareUrl?: string;
   slug?: string;
@@ -16,6 +18,7 @@ type ListingShareButtonProps = {
 
 export function ListingShareButton({
   title,
+  price,
   shareUrl,
   slug,
   className = "",
@@ -25,10 +28,12 @@ export function ListingShareButton({
 
   const handleShare = async () => {
     const url = shareUrl ?? (slug ? getListingPublicUrl(slug) : window.location.href);
+    const priceLabel = typeof price === "number" ? formatListingPrice(price) : price;
+    const shareTitle = `${title} - ${priceLabel}`;
 
     try {
       if (navigator.share) {
-        await navigator.share({ title, url });
+        await navigator.share({ title: shareTitle, url });
         return;
       }
 
@@ -36,7 +41,8 @@ export function ListingShareButton({
       setShareMessage("Link kopyalandı");
       window.setTimeout(() => setShareMessage(""), 2500);
     } catch {
-      setShareMessage("");
+      setShareMessage("Linki kopyalamaq mümkün olmadı");
+      window.setTimeout(() => setShareMessage(""), 2500);
     }
   };
 

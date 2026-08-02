@@ -1,6 +1,7 @@
 import { Clock3, MapPin } from "lucide-react";
 import Link from "next/link";
 
+import { ListingStatusBadge } from "@/components/listings/ListingStatusBadge";
 import { ListingImage } from "@/components/ui/ListingImage";
 import { getPrimaryListingImage } from "@/lib/listings/listing-images";
 import type { SampleListing } from "@/types/listing";
@@ -15,13 +16,18 @@ export function SampleListingCard({ listing }: SampleListingCardProps) {
   return (
     <article className="card-premium overflow-hidden rounded-2xl">
       <Link
-        href={`/listings/${listing.slug}`}
+        href={`/elanlar/${listing.slug}`}
         className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 focus-visible:ring-offset-2"
       >
         <div className="relative m-2.5 overflow-hidden rounded-xl bg-brand-surface">
           <div className="relative aspect-[4/3]">
             {primaryImage ? (
-              <ListingImage src={primaryImage} alt={listing.title} fallbackClass={listing.fallback} />
+              <ListingImage
+                src={primaryImage}
+                alt={listing.title}
+                fallbackClass={listing.fallback}
+                fit="contain"
+              />
             ) : (
               <div
                 className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${listing.fallback}`}
@@ -31,6 +37,9 @@ export function SampleListingCard({ listing }: SampleListingCardProps) {
                 </span>
               </div>
             )}
+            <div className="absolute left-2.5 top-2.5">
+              <ListingStatusBadge status={listing.status} />
+            </div>
           </div>
         </div>
 

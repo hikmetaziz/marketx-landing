@@ -2,11 +2,11 @@ import { SITE } from "@/constants/data";
 
 /** Canonical public listing URL — mobil Universal/App Link ilə eyni format. */
 export function getListingPublicUrl(slug: string): string {
-  return `${SITE.url}/listings/${encodeURIComponent(slug)}`;
+  return `${SITE.url}/elanlar/${encodeURIComponent(slug)}`;
 }
 
 export function getListingPath(slug: string): string {
-  return `/listings/${encodeURIComponent(slug)}`;
+  return `/elanlar/${encodeURIComponent(slug)}`;
 }
 
 /** UUID deyil, slug kimi qəbul et (deep link / share). */

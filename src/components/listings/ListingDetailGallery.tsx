@@ -45,6 +45,7 @@ export function ListingDetailGallery({
               alt={title}
               fallbackClass={fallbackClass}
               sizes={DETAIL_MAIN_IMAGE_SIZES}
+              fit="contain"
             />
           ) : (
             <div
@@ -79,6 +80,7 @@ export function ListingDetailGallery({
                 alt={`${title} ${index + 1}`}
                 fallbackClass={fallbackClass}
                 sizes={DETAIL_THUMB_IMAGE_SIZES}
+                fit="contain"
               />
             </button>
           ))}

@@ -12,7 +12,7 @@ type LiveListingFavoriteButtonProps = {
 
 export function LiveListingFavoriteButton({ listingId }: LiveListingFavoriteButtonProps) {
   const pathname = usePathname();
-  const { favorited, toggleFavorite, loading, actionLoading, needsLogin, favoritesAvailable } =
+  const { favorited, toggleFavorite, loading, actionLoading, errorMessage, needsLogin, favoritesAvailable } =
     useLiveListingFavorite(listingId);
 
   if (!favoritesAvailable) {
@@ -28,7 +28,7 @@ export function LiveListingFavoriteButton({ listingId }: LiveListingFavoriteButt
   }
 
   if (needsLogin) {
-    const returnTo = pathname || "/listings";
+    const returnTo = pathname || "/elanlar";
     return (
       <Link
         href={`/login?returnTo=${encodeURIComponent(returnTo)}`}
@@ -41,16 +41,19 @@ export function LiveListingFavoriteButton({ listingId }: LiveListingFavoriteButt
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => void toggleFavorite()}
-      disabled={loading || actionLoading}
-      className="flex w-full items-center justify-center gap-2 rounded-xl border border-brand-border bg-white px-4 py-3 text-sm font-semibold text-brand-text transition-colors hover:border-brand-primary/40 hover:text-brand-primary disabled:opacity-70"
-    >
-      <Heart
-        className={`h-4 w-4 ${favorited ? "fill-brand-primary text-brand-primary" : "text-brand-muted"}`}
-      />
-      {favorited ? "Favoritdən çıxar" : "Favoritə əlavə et"}
-    </button>
+    <div className="space-y-2">
+      <button
+        type="button"
+        onClick={() => void toggleFavorite()}
+        disabled={loading || actionLoading}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-brand-border bg-white px-4 py-3 text-sm font-semibold text-brand-text transition-colors hover:border-brand-primary/40 hover:text-brand-primary disabled:opacity-70"
+      >
+        <Heart
+          className={`h-4 w-4 ${favorited ? "fill-brand-primary text-brand-primary" : "text-brand-muted"}`}
+        />
+        {favorited ? "Favoritdən çıxar" : "Favoritə əlavə et"}
+      </button>
+      {errorMessage ? <p className="text-center text-xs font-medium text-red-700">{errorMessage}</p> : null}
+    </div>
   );
 }

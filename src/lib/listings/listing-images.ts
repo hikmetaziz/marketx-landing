@@ -33,3 +33,8 @@ export function getListingImages(listing: ListingImageSource): string[] {
 export function getPrimaryListingImage(listing: ListingImageSource): string | null {
   return getListingImages(listing)[0] ?? null;
 }
+
+/** Public siyahılar üçün — ən azı bir etibarlı şəkil URL-i olmalıdır. */
+export function listingHasImages(listing: ListingImageSource): boolean {
+  return getListingImages(listing).length > 0;
+}

@@ -1,6 +1,10 @@
 /** Mobil app ilə eyni kateqoriya adları (DB-ə yazılır) */
 export const LISTING_CATEGORIES = [
   "Avto",
+  "Ehtiyat hissələri",
+  "Avto ehtiyat hissələri",
+  "Avto avadanlıq",
+  "Avto aksesuarlar",
   "Telefon",
   "Elektronika",
   "Daşınmaz əmlak",
@@ -10,8 +14,6 @@ export const LISTING_CATEGORIES = [
   "Xidmətlər",
   "Digər",
 ] as const;
-
-export const CITY_OPTIONS = ["Bakı", "Gəncə", "Sumqayıt", "Mingəçevir", "Şəki", "Lənkəran", "Digər"] as const;
 
 export const LISTING_CONDITIONS = ["Yeni", "İşlənmiş"] as const;
 

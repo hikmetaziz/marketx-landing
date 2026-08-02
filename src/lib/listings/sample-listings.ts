@@ -2,11 +2,6 @@ import { POPULAR_LISTINGS } from "@/constants/data";
 import type { SampleListing } from "@/types/listing";
 
 const SAMPLE_CATEGORY_BY_SLUG: Record<string, string> = {
-  "paltaryuyan-masin": "Məişət texnikası",
-  tozsoran: "Məişət texnikası",
-  "robot-tozsoran": "Məişət texnikası",
-  blender: "Məişət texnikası",
-  "mikrodalgali-soba": "Məişət texnikası",
   "kofe-masini": "Məişət texnikası",
   "rahat-kreslo": "Mebel və interyer",
   "gece-lampasi": "Mebel və interyer",

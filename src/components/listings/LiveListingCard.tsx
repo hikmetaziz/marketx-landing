@@ -20,13 +20,18 @@ export function LiveListingCard({ listing }: LiveListingCardProps) {
   return (
     <article className="card-premium group relative overflow-hidden rounded-2xl">
       <Link
-        href={`/listings/${listing.slug}`}
+        href={`/elanlar/${listing.slug}`}
         className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary/40 focus-visible:ring-offset-2"
       >
         <div className="relative m-2.5 overflow-hidden rounded-xl bg-brand-surface">
           <div className="relative aspect-[4/3]">
             {primaryImage ? (
-              <ListingImage src={primaryImage} alt={listing.title} fallbackClass={LISTING_IMAGE_FALLBACK_CLASS} />
+              <ListingImage
+                src={primaryImage}
+                alt={listing.title}
+                fallbackClass={LISTING_IMAGE_FALLBACK_CLASS}
+                fit="contain"
+              />
             ) : (
               <div
                 className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${LISTING_IMAGE_FALLBACK_CLASS}`}

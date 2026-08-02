@@ -11,22 +11,22 @@ const iconMap = {
 
 export function TrustValueSection() {
   return (
-    <section className="pb-6 sm:pb-7" aria-labelledby="trust-value-heading">
+    <section className="border-y border-brand-border bg-white py-8 sm:py-10" aria-labelledby="trust-value-heading">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <h2 id="trust-value-heading" className="sr-only">
           MarktX üstünlükləri
         </h2>
 
-        <div className="grid gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-0">
           {TRUST_CARDS.map((card) => {
             const Icon = iconMap[card.icon];
 
             return (
               <article
                 key={card.title}
-                className="card-premium flex min-h-[120px] items-start gap-3.5 rounded-2xl p-4 hover:translate-y-0"
+                className="flex min-h-[88px] items-start gap-3.5 lg:border-l lg:border-brand-border lg:px-6 lg:first:border-l-0 lg:first:pl-0 lg:last:pr-0"
               >
-                <span className="icon-well inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-brand-primary/20 text-brand-primary">
+                <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-brand-primary-light/60 text-brand-primary">
                   <Icon className="h-[22px] w-[22px]" strokeWidth={2.1} />
                 </span>
                 <div className="min-w-0">

@@ -19,6 +19,7 @@ export function useLiveListingFavorite(listingId: string) {
   const [favorited, setFavorited] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const favoritesAvailable = isSupabaseConfigured();
   const canFetchFavorites =
@@ -67,17 +68,24 @@ export function useLiveListingFavorite(listingId: string) {
       return;
     }
 
+    setErrorMessage("");
     setActionLoading(true);
     try {
       if (favorited) {
         const result = await removeListingFavorite(supabase, listingId, user.id);
         if (result.ok) {
           setFavorited(false);
+        } else {
+          setErrorMessage("FavoritdÉ™n Ã§Ä±xarmaq mÃ¼mkÃ¼n olmadÄ±.");
         }
       } else {
         const result = await addListingFavorite(supabase, listingId, user.id);
         if (result.ok) {
           setFavorited(true);
+        } else if (result.reason === "self_favorite") {
+          setErrorMessage("Öz elanınızı favoritə əlavə edə bilməzsiniz.");
+        } else {
+          setErrorMessage("FavoritÉ™ É™lavÉ™ etmÉ™k mÃ¼mkÃ¼n olmadÄ±.");
         }
       }
     } finally {
@@ -99,8 +107,10 @@ export function useLiveListingFavorite(listingId: string) {
     requireLogin,
     loading: authLoading || (canFetchFavorites && !loaded),
     actionLoading,
+    errorMessage,
     canUseFavorites: canFetchFavorites && loaded,
     needsLogin: favoritesAvailable && !authLoading && !isAuthenticated,
     favoritesAvailable,
   };
 }
+

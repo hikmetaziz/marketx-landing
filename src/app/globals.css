@@ -40,7 +40,8 @@ body {
 .hero-gradient-bg {
   background: linear-gradient(135deg, #0c3b6e 0%, #0f766e 38%, #1d4ed8 68%, #b45309 100%);
   position: relative;
-  overflow: hidden;
+  /* overflow: hidden kəsir — select dropdown və kateqoriya paneli görünmür */
+  overflow: visible;
 }
 
 .hero-gradient-bg::before {
@@ -64,9 +65,18 @@ body {
 .search-glass-field {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.18);
-  color: rgba(255, 255, 255, 0.55);
-  cursor: not-allowed;
+  color: #fff;
   outline: none;
+}
+
+.search-glass-field::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+/* Native select dropdown ağ fonda — option-lar tünd mətn olmalıdır */
+.search-glass-field option {
+  color: #0f172a;
+  background: #fff;
 }
 
 .card-premium {

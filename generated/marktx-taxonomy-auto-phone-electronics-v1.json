@@ -1,0 +1,731 @@
+{
+  "generated_from": "marktx-taxonomy-v1",
+  "parents": [
+    {
+      "aliases": [
+        "avto",
+        "avtomobil",
+        "neqliyyat",
+        "nəqliyyat"
+      ],
+      "catalogue_image_path": "/images/catalogue/avtomobil-ve-neqliyyat.png",
+      "color_hex": "#DBEAFE",
+      "groups": [
+        {
+          "key": "auto-vehicles",
+          "label": "Nəqliyyat vasitələri",
+          "leaves": [
+            {
+              "aliases": [
+                "minik-avtomobili",
+                "minik-avtomobilleri"
+              ],
+              "name": "Avtomobillər",
+              "order": 1,
+              "slug": "avtomobiller"
+            },
+            {
+              "aliases": [],
+              "name": "Yük avtomobilləri",
+              "order": 2,
+              "slug": "yuk-avtomobilleri"
+            },
+            {
+              "aliases": [],
+              "name": "Mikroavtobuslar",
+              "order": 3,
+              "slug": "mikroavtobuslar"
+            },
+            {
+              "aliases": [],
+              "name": "Avtobuslar",
+              "order": 4,
+              "slug": "avtobuslar"
+            },
+            {
+              "aliases": [
+                "motosiklet"
+              ],
+              "name": "Motosikletlər",
+              "order": 5,
+              "slug": "motosikletler"
+            },
+            {
+              "aliases": [],
+              "name": "Skuterlər və mopedlər",
+              "order": 6,
+              "slug": "skuterler-ve-mopedler"
+            },
+            {
+              "aliases": [],
+              "name": "ATV və UTV",
+              "order": 7,
+              "slug": "atv-ve-utv"
+            },
+            {
+              "aliases": [],
+              "name": "Elektrik skuterlər və şəxsi nəqliyyat",
+              "order": 8,
+              "slug": "elektrik-skuterler-ve-sexsi-neqliyyat"
+            },
+            {
+              "aliases": [],
+              "name": "Velosipedlər",
+              "order": 9,
+              "slug": "velosipedler"
+            },
+            {
+              "aliases": [],
+              "name": "Elektrik velosipedlər",
+              "order": 10,
+              "slug": "elektrik-velosipedler"
+            },
+            {
+              "aliases": [],
+              "name": "Qoşqular və yarımqoşqular",
+              "order": 11,
+              "slug": "qosqular-ve-yarimqosqular"
+            },
+            {
+              "aliases": [],
+              "name": "Xüsusi texnika",
+              "order": 12,
+              "slug": "xususi-texnika"
+            },
+            {
+              "aliases": [],
+              "name": "Kənd təsərrüfatı texnikası",
+              "order": 13,
+              "slug": "kend-teserrufati-texnikasi"
+            },
+            {
+              "aliases": [],
+              "name": "Su nəqliyyatı",
+              "order": 14,
+              "slug": "su-neqliyyati"
+            }
+          ],
+          "order": 1
+        }
+      ],
+      "icon_key": "directions-car",
+      "key": "automobile",
+      "name": "Avtomobil və nəqliyyat",
+      "slug": "avtomobil-ve-neqliyyat",
+      "sort_order": 20
+    },
+    {
+      "aliases": [
+        "avto-aksesuarlar",
+        "avto-avadanliq",
+        "avto-ehtiyat-hisseleri",
+        "ehtiyat-hisseleri"
+      ],
+      "catalogue_image_path": "/images/catalogue/avto-ehtiyat-hisseleri-ve-avadanliq.png",
+      "color_hex": "#E0F2FE",
+      "groups": [
+        {
+          "key": "auto-parts-equipment",
+          "label": "Ehtiyat hissələri və avadanlıq",
+          "leaves": [
+            {
+              "aliases": [
+                "muherrik-hisseleri"
+              ],
+              "name": "Mühərrik və hissələri",
+              "order": 1,
+              "slug": "muherrik-ve-hisseleri"
+            },
+            {
+              "aliases": [],
+              "name": "Transmissiya və sürətlər qutusu",
+              "order": 2,
+              "slug": "transmissiya-ve-suretler-qutusu"
+            },
+            {
+              "aliases": [],
+              "name": "Kuzov hissələri",
+              "order": 3,
+              "slug": "kuzov-hisseleri"
+            },
+            {
+              "aliases": [],
+              "name": "Optika və işıqlandırma",
+              "order": 4,
+              "slug": "optika-ve-isiqlandirma"
+            },
+            {
+              "aliases": [],
+              "name": "Asqı və sükan sistemi",
+              "order": 5,
+              "slug": "asqi-ve-sukan-sistemi"
+            },
+            {
+              "aliases": [],
+              "name": "Əyləc sistemi",
+              "order": 6,
+              "slug": "eylec-sistemi"
+            },
+            {
+              "aliases": [],
+              "name": "Elektrik və alışdırma hissələri",
+              "order": 7,
+              "slug": "elektrik-ve-alisdirma-hisseleri"
+            },
+            {
+              "aliases": [],
+              "name": "Yanacaq və egzoz sistemi",
+              "order": 8,
+              "slug": "yanacaq-ve-egzoz-sistemi"
+            },
+            {
+              "aliases": [],
+              "name": "Şinlər",
+              "order": 9,
+              "slug": "sinler"
+            },
+            {
+              "aliases": [],
+              "name": "Disklər",
+              "order": 10,
+              "slug": "diskler"
+            },
+            {
+              "aliases": [],
+              "name": "Akkumulyatorlar",
+              "order": 11,
+              "slug": "akkumulyatorlar"
+            },
+            {
+              "aliases": [],
+              "name": "Yağlar, mayelər və avtokimya",
+              "order": 12,
+              "slug": "yaglar-mayeler-ve-avtokimya"
+            },
+            {
+              "aliases": [],
+              "name": "Salon aksesuarları",
+              "order": 13,
+              "slug": "salon-aksesuarlari"
+            },
+            {
+              "aliases": [],
+              "name": "Xarici aksesuarlar",
+              "order": 14,
+              "slug": "xarici-aksesuarlar"
+            },
+            {
+              "aliases": [],
+              "name": "Avtoelektronika və multimedia",
+              "order": 15,
+              "slug": "avtoelektronika-ve-multimedia"
+            },
+            {
+              "aliases": [
+                "avto-xidmetler"
+              ],
+              "name": "Servis və diaqnostika avadanlığı",
+              "order": 16,
+              "slug": "servis-ve-diaqnostika-avadanligi"
+            }
+          ],
+          "order": 1
+        }
+      ],
+      "icon_key": "car-repair",
+      "key": "auto_parts",
+      "name": "Avto ehtiyat hissələri və avadanlıq",
+      "slug": "avto-ehtiyat-hisseleri-ve-avadanliq",
+      "sort_order": 25
+    },
+    {
+      "aliases": [
+        "mobil-telefonlar",
+        "telefon-aksesuarlari",
+        "telefonlar"
+      ],
+      "catalogue_image_path": "/images/catalogue/telefon.png",
+      "color_hex": "#DCFCE7",
+      "groups": [
+        {
+          "key": "phone-devices",
+          "label": "Telefon cihazları",
+          "leaves": [
+            {
+              "aliases": [],
+              "name": "Smartfonlar",
+              "order": 1,
+              "slug": "smartfonlar"
+            },
+            {
+              "aliases": [
+                "duymeli-telefonlar"
+              ],
+              "name": "Düyməli telefonlar",
+              "order": 2,
+              "slug": "dymeli-telefonlar"
+            },
+            {
+              "aliases": [],
+              "name": "Ev və ofis telefonları",
+              "order": 3,
+              "slug": "ev-ve-ofis-telefonlari"
+            },
+            {
+              "aliases": [],
+              "name": "Radiotelefonlar",
+              "order": 4,
+              "slug": "radiotelefonlar"
+            },
+            {
+              "aliases": [],
+              "name": "Peyk telefonları",
+              "order": 5,
+              "slug": "peyk-telefonlari"
+            }
+          ],
+          "order": 1
+        },
+        {
+          "key": "phone-protection",
+          "label": "Qoruyucu məhsullar",
+          "leaves": [
+            {
+              "aliases": [],
+              "name": "Telefon qabları",
+              "order": 6,
+              "slug": "telefon-qablari"
+            },
+            {
+              "aliases": [],
+              "name": "Ekran qoruyucuları",
+              "order": 7,
+              "slug": "ekran-qoruyuculari"
+            },
+            {
+              "aliases": [],
+              "name": "Kamera qoruyucuları",
+              "order": 8,
+              "slug": "kamera-qoruyuculari"
+            }
+          ],
+          "order": 2
+        },
+        {
+          "key": "phone-charging-energy",
+          "label": "Şarj və enerji",
+          "leaves": [
+            {
+              "aliases": [],
+              "name": "Şarj adapterləri",
+              "order": 9,
+              "slug": "sarj-adapterleri"
+            },
+            {
+              "aliases": [],
+              "name": "Şarj kabelləri",
+              "order": 10,
+              "slug": "sarj-kabelleri"
+            },
+            {
+              "aliases": [],
+              "name": "Simsiz şarj cihazları",
+              "order": 11,
+              "slug": "simsiz-sarj-cihazlari"
+            },
+            {
+              "aliases": [],
+              "name": "Powerbanklar",
+              "order": 12,
+              "slug": "powerbanklar"
+            },
+            {
+              "aliases": [],
+              "name": "Avtomobil şarj cihazları",
+              "order": 13,
+              "slug": "avtomobil-sarj-cihazlari"
+            }
+          ],
+          "order": 3
+        },
+        {
+          "key": "phone-adapters-holders",
+          "label": "Adapter və tutacaqlar",
+          "leaves": [
+            {
+              "aliases": [],
+              "name": "OTG və telefon adapterləri",
+              "order": 14,
+              "slug": "otg-ve-telefon-adapterleri"
+            },
+            {
+              "aliases": [],
+              "name": "SIM adapterləri və SIM tray-lar",
+              "order": 15,
+              "slug": "sim-adapterleri-ve-sim-tray-lar"
+            },
+            {
+              "aliases": [],
+              "name": "Avtomobil telefon tutacaqları",
+              "order": 16,
+              "slug": "avtomobil-telefon-tutacaqlari"
+            },
+            {
+              "aliases": [],
+              "name": "Masaüstü telefon tutacaqları",
+              "order": 17,
+              "slug": "masaustu-telefon-tutacaqlari"
+            },
+            {
+              "aliases": [],
+              "name": "Selfie çubuqları və mini ştativlər",
+              "order": 18,
+              "slug": "selfie-cubuqlari-ve-mini-stativler"
+            },
+            {
+              "aliases": [],
+              "name": "Telefon gimbal və stabilizatorları",
+              "order": 19,
+              "slug": "telefon-gimbal-ve-stabilizatorlari"
+            }
+          ],
+          "order": 4
+        },
+        {
+          "key": "phone-spare-parts",
+          "label": "Telefon ehtiyat hissələri",
+          "leaves": [
+            {
+              "aliases": [],
+              "name": "Ekran və sensorlar",
+              "order": 20,
+              "slug": "ekran-ve-sensorlar"
+            },
+            {
+              "aliases": [],
+              "name": "Telefon batareyaları",
+              "order": 21,
+              "slug": "telefon-batareyalari"
+            },
+            {
+              "aliases": [],
+              "name": "Korpus və çərçivələr",
+              "order": 22,
+              "slug": "korpus-ve-cerciveler"
+            },
+            {
+              "aliases": [],
+              "name": "Telefon kameraları",
+              "order": 23,
+              "slug": "telefon-kameralari"
+            },
+            {
+              "aliases": [],
+              "name": "Şarj portları və flex kabellər",
+              "order": 24,
+              "slug": "sarj-portlari-ve-flex-kabeller"
+            },
+            {
+              "aliases": [],
+              "name": "Dinamik və mikrofonlar",
+              "order": 25,
+              "slug": "dinamik-ve-mikrofonlar"
+            },
+            {
+              "aliases": [],
+              "name": "Telefon ana plataları",
+              "order": 26,
+              "slug": "telefon-ana-platalari"
+            },
+            {
+              "aliases": [],
+              "name": "Düymələr və kiçik hissələr",
+              "order": 27,
+              "slug": "duymeler-ve-kicik-hisseler"
+            },
+            {
+              "aliases": [],
+              "name": "Digər telefon ehtiyat hissələri",
+              "order": 28,
+              "slug": "diger-telefon-ehtiyat-hisseleri"
+            }
+          ],
+          "order": 5
+        },
+        {
+          "key": "phone-repair-kits",
+          "label": "Təmir və komplektlər",
+          "leaves": [
+            {
+              "aliases": [],
+              "name": "Telefon təmir alətləri",
+              "order": 29,
+              "slug": "telefon-temir-aletleri"
+            },
+            {
+              "aliases": [],
+              "name": "Telefon aksesuar dəstləri",
+              "order": 30,
+              "slug": "telefon-aksesuar-destleri"
+            }
+          ],
+          "order": 6
+        }
+      ],
+      "icon_key": "smartphone",
+      "key": "phone",
+      "name": "Telefon",
+      "slug": "telefon",
+      "sort_order": 30
+    },
+    {
+      "aliases": [
+        "elektronik",
+        "komputer",
+        "komputerler",
+        "kompüter"
+      ],
+      "catalogue_image_path": "/images/catalogue/elektronika.png",
+      "color_hex": "#EDE9FE",
+      "groups": [
+        {
+          "key": "electronics-computing-mobile",
+          "label": "Kompüter və mobil hesablama",
+          "leaves": [
+            {
+              "aliases": [],
+              "name": "Noutbuklar",
+              "order": 1,
+              "slug": "noutbuklar"
+            },
+            {
+              "aliases": [],
+              "name": "Masaüstü kompüterlər",
+              "order": 2,
+              "slug": "masaustu-komputerler"
+            },
+            {
+              "aliases": [],
+              "name": "Monobloklar",
+              "order": 3,
+              "slug": "monobloklar"
+            },
+            {
+              "aliases": [],
+              "name": "Planşetlər",
+              "order": 4,
+              "slug": "planshetler"
+            },
+            {
+              "aliases": [],
+              "name": "Elektron kitablar",
+              "order": 5,
+              "slug": "elektron-kitablar"
+            }
+          ],
+          "order": 1
+        },
+        {
+          "key": "electronics-components-accessories",
+          "label": "Kompüter komponentləri və aksesuarları",
+          "leaves": [
+            {
+              "aliases": [],
+              "name": "Monitorlar",
+              "order": 6,
+              "slug": "monitorlar"
+            },
+            {
+              "aliases": [],
+              "name": "Prosessorlar",
+              "order": 7,
+              "slug": "prosessorlar"
+            },
+            {
+              "aliases": [],
+              "name": "Ana platalar",
+              "order": 8,
+              "slug": "ana-platalar"
+            },
+            {
+              "aliases": [],
+              "name": "Videokartlar",
+              "order": 9,
+              "slug": "videokartlar"
+            },
+            {
+              "aliases": [],
+              "name": "Operativ yaddaş - RAM",
+              "order": 10,
+              "slug": "operativ-yaddas-ram"
+            },
+            {
+              "aliases": [],
+              "name": "SSD, HDD və yaddaş qurğuları",
+              "order": 11,
+              "slug": "ssd-hdd-ve-yaddas-qurgulari"
+            },
+            {
+              "aliases": [],
+              "name": "Korpus, qida bloku və soyutma",
+              "order": 12,
+              "slug": "korpus-qida-bloku-ve-soyutma"
+            },
+            {
+              "aliases": [],
+              "name": "Kompüter periferiyası",
+              "order": 13,
+              "slug": "komputer-periferiyasi"
+            },
+            {
+              "aliases": [],
+              "name": "Printerlər və skanerlər",
+              "order": 14,
+              "slug": "printerler-ve-skanerler"
+            },
+            {
+              "aliases": [],
+              "name": "Şəbəkə avadanlığı",
+              "order": 15,
+              "slug": "sebeke-avadanligi"
+            }
+          ],
+          "order": 2
+        },
+        {
+          "key": "electronics-tv-video",
+          "label": "TV və video",
+          "leaves": [
+            {
+              "aliases": [],
+              "name": "Televizorlar",
+              "order": 16,
+              "slug": "televizorlar"
+            },
+            {
+              "aliases": [],
+              "name": "Proyektorlar",
+              "order": 17,
+              "slug": "proyektorlar"
+            },
+            {
+              "aliases": [
+                "televizor-audio"
+              ],
+              "name": "TV box və media pleyerlər",
+              "order": 18,
+              "slug": "tv-box-ve-media-pleyerler"
+            },
+            {
+              "aliases": [],
+              "name": "Peyk və TV avadanlığı",
+              "order": 19,
+              "slug": "peyk-ve-tv-avadanligi"
+            }
+          ],
+          "order": 3
+        },
+        {
+          "key": "electronics-audio",
+          "label": "Audio",
+          "leaves": [
+            {
+              "aliases": [],
+              "name": "Qulaqlıqlar",
+              "order": 20,
+              "slug": "qulaqliqlar"
+            },
+            {
+              "aliases": [],
+              "name": "Portativ dinamiklər",
+              "order": 21,
+              "slug": "portativ-dinamikler"
+            },
+            {
+              "aliases": [],
+              "name": "Ev audio sistemləri",
+              "order": 22,
+              "slug": "ev-audio-sistemleri"
+            },
+            {
+              "aliases": [],
+              "name": "Mikrofon və audio interfeyslər",
+              "order": 23,
+              "slug": "mikrofon-ve-audio-interfeysler"
+            }
+          ],
+          "order": 4
+        },
+        {
+          "key": "electronics-gaming",
+          "label": "Oyun",
+          "leaves": [
+            {
+              "aliases": [],
+              "name": "Oyun konsolları",
+              "order": 24,
+              "slug": "oyun-konsollari"
+            },
+            {
+              "aliases": [
+                "elektronika-aksesuarlari"
+              ],
+              "name": "Oyun aksesuarları",
+              "order": 25,
+              "slug": "oyun-aksesuarlari"
+            }
+          ],
+          "order": 5
+        },
+        {
+          "key": "electronics-photo-wearable-smart",
+          "label": "Foto, wearable və ağıllı cihazlar",
+          "leaves": [
+            {
+              "aliases": [
+                "foto-video"
+              ],
+              "name": "Foto və videokameralar",
+              "order": 26,
+              "slug": "foto-ve-videokameralar"
+            },
+            {
+              "aliases": [],
+              "name": "Obyektiv və foto/video aksesuarları",
+              "order": 27,
+              "slug": "obyektiv-ve-foto-video-aksesuarlari"
+            },
+            {
+              "aliases": [
+                "smart-saatlar"
+              ],
+              "name": "Smart saat və wearable cihazlar",
+              "order": 28,
+              "slug": "smart-saat-ve-wearable-cihazlar"
+            },
+            {
+              "aliases": [],
+              "name": "Ağıllı və təhlükəsizlik sistemləri",
+              "order": 29,
+              "slug": "agilli-ve-tehlukesizlik-sistemleri"
+            },
+            {
+              "aliases": [],
+              "name": "Dronlar və aksesuarlar",
+              "order": 30,
+              "slug": "dronlar-ve-aksesuarlar"
+            }
+          ],
+          "order": 6
+        }
+      ],
+      "icon_key": "devices",
+      "key": "electronics",
+      "name": "Elektronika",
+      "slug": "elektronika",
+      "sort_order": 40
+    }
+  ],
+  "version": 1,
+  "version_name": "marktx-taxonomy-auto-phone-electronics-v1"
+}

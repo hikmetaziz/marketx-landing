@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900">
+  <defs>
+    <linearGradient id="water" x1="0" x2="1">
+      <stop offset="0" stop-color="#38bdf8"/>
+      <stop offset="1" stop-color="#2563eb"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#0f172a" flood-opacity=".18"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="900" fill="none"/>
+  <g filter="url(#softShadow)">
+    <rect x="365" y="185" width="470" height="500" rx="56" fill="#ffffff"/>
+    <rect x="405" y="235" width="390" height="92" rx="28" fill="#e0f2fe"/>
+    <rect x="440" y="370" width="92" height="230" rx="34" fill="#f8fafc" stroke="#94a3b8" stroke-width="12"/>
+    <rect x="554" y="370" width="92" height="230" rx="34" fill="#f8fafc" stroke="#94a3b8" stroke-width="12"/>
+    <rect x="668" y="370" width="92" height="230" rx="34" fill="#f8fafc" stroke="#94a3b8" stroke-width="12"/>
+    <path d="M600 146c49 58 87 117 87 171 0 60-39 103-87 103s-87-43-87-103c0-54 38-113 87-171z" fill="url(#water)"/>
+    <path d="M492 650h216" stroke="#2563eb" stroke-width="18" stroke-linecap="round"/>
+    <path d="M445 710h310" stroke="#bae6fd" stroke-width="18" stroke-linecap="round"/>
+  </g>
+  <text x="600" y="790" text-anchor="middle" font-family="Arial, sans-serif" font-size="42" font-weight="700" fill="#0f172a">Ecosoft</text>
+  <text x="600" y="836" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#475569">FPV12ECO</text>
+  <title>10" High Pressure Sediment Filter, 1/2″</title>
+</svg>

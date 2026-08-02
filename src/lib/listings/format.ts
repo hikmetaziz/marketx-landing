@@ -1,60 +1,75 @@
-export function formatListingPrice(price: number): string {
-  return `${price.toLocaleString("az-AZ")} AZN`;
+/** SSR və brauzer eyni format — locale-dən asılı deyil (9 700). */
+function formatAzNumber(value: number): string {
+  const safe = Number.isFinite(value) ? Math.max(0, Math.floor(Math.abs(value))) : 0;
+  return safe.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 }
 
+const AZ_MONTHS = [
+  "yanvar",
+  "fevral",
+  "mart",
+  "aprel",
+  "may",
+  "iyun",
+  "iyul",
+  "avqust",
+  "sentyabr",
+  "oktyabr",
+  "noyabr",
+  "dekabr",
+] as const;
+
+const AZERBAIJAN_TIMEZONE_OFFSET_MS = 4 * 60 * 60 * 1000;
+
+function getAzerbaijanDateParts(date: Date): { day: number; month: number; year: number } {
+  const shifted = new Date(date.getTime() + AZERBAIJAN_TIMEZONE_OFFSET_MS);
+  return {
+    day: shifted.getUTCDate(),
+    month: shifted.getUTCMonth(),
+    year: shifted.getUTCFullYear(),
+  };
+}
+
+function getAzerbaijanDayNumber(date: Date): number {
+  const parts = getAzerbaijanDateParts(date);
+  return Math.floor(Date.UTC(parts.year, parts.month, parts.day) / 86_400_000);
+}
+
+export function formatListingPrice(price: number): string {
+  return `${formatAzNumber(price)} AZN`;
+}
+
+/** Node və brauzerdə eyni çıxış — toLocaleDateString hydration mismatch verir. */
 export function formatListingDate(isoDate: string): string {
   const date = new Date(isoDate);
   if (Number.isNaN(date.getTime())) {
     return isoDate;
   }
 
-  return date.toLocaleDateString("az-AZ", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  const { day, month, year } = getAzerbaijanDateParts(date);
+  return `${day} ${AZ_MONTHS[month]} ${year}`;
 }
 
-/** Web display only — relative time for listing cards and detail metadata. */
+/** Web display only — today/yesterday/date labels for listing cards and metadata. */
 export function formatListingRelativeDate(isoDate: string, now: Date = new Date()): string {
   const date = new Date(isoDate);
   if (Number.isNaN(date.getTime())) {
     return isoDate;
   }
 
-  const diffMs = now.getTime() - date.getTime();
-  if (diffMs < 0) {
+  const diffDays = getAzerbaijanDayNumber(now) - getAzerbaijanDayNumber(date);
+
+  if (diffDays < 0) {
     return formatListingDate(isoDate);
   }
 
-  const diffMinutes = Math.floor(diffMs / 60_000);
-  const diffHours = Math.floor(diffMs / 3_600_000);
-  const diffDays = Math.floor(diffMs / 86_400_000);
-
-  if (diffMinutes < 1) {
-    return "az əvvəl";
-  }
-
-  if (diffMinutes < 60) {
-    return `${diffMinutes} dəq əvvəl`;
-  }
-
-  if (diffHours < 24) {
-    return `${diffHours} saat əvvəl`;
-  }
-
-  if (diffHours < 48) {
-    return "dünən";
-  }
-
-  if (diffDays < 7) {
-    return `${diffDays} gün əvvəl`;
-  }
+  if (diffDays === 0) return "Bugün";
+  if (diffDays === 1) return "Dünən";
 
   return formatListingDate(isoDate);
 }
 
 export function formatListingViewCount(count: number): string {
   const safe = Number.isFinite(count) && count >= 0 ? Math.floor(count) : 0;
-  return `${safe.toLocaleString("az-AZ")} baxış`;
+  return `${formatAzNumber(safe)} baxış`;
 }

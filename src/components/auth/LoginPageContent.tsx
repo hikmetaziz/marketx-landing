@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 
-import { LoginForm } from "@/components/auth/LoginForm";
+import { ResponsiveAuthForm } from "@/components/auth/ResponsiveAuthForm";
 import { isCreateListingReturnPath, sanitizeInternalPath } from "@/lib/safe-path";
 
 export function LoginPageContent() {
@@ -17,7 +17,7 @@ export function LoginPageContent() {
           Elan yerləşdirmək üçün hesab lazımdır — qeydiyyatdan keçin və ya daxil olun.
         </p>
       ) : null}
-      <LoginForm />
+      <ResponsiveAuthForm />
     </>
   );
 }

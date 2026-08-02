@@ -8,6 +8,7 @@
 create table if not exists public.profiles (
   id uuid primary key references auth.users (id) on delete cascade,
   email text,
+  phone text,
   display_name text,
   role text not null default 'user' check (role in ('user', 'admin', 'moderator')),
   created_at timestamptz not null default now(),
@@ -15,6 +16,7 @@ create table if not exists public.profiles (
 );
 
 alter table public.profiles add column if not exists email text;
+alter table public.profiles add column if not exists phone text;
 alter table public.profiles add column if not exists display_name text;
 alter table public.profiles add column if not exists role text default 'user';
 alter table public.profiles add column if not exists created_at timestamptz default now();
@@ -29,10 +31,21 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, role)
-  values (new.id, new.email, 'user')
+  insert into public.profiles (id, email, phone, display_name, role)
+  values (
+    new.id,
+    coalesce(new.email, nullif(new.raw_user_meta_data ->> 'email', '')),
+    coalesce(new.phone, nullif(new.raw_user_meta_data ->> 'phone', '')),
+    coalesce(
+      nullif(new.raw_user_meta_data ->> 'display_name', ''),
+      nullif(new.raw_user_meta_data ->> 'full_name', '')
+    ),
+    'user'
+  )
   on conflict (id) do update
-    set email = excluded.email,
+    set email = coalesce(excluded.email, public.profiles.email),
+        phone = coalesce(excluded.phone, public.profiles.phone),
+        display_name = coalesce(excluded.display_name, public.profiles.display_name),
         updated_at = now();
   return new;
 end;
@@ -44,10 +57,36 @@ create trigger on_auth_user_created
   for each row
   execute function public.handle_new_user();
 
-insert into public.profiles (id, email, role)
-select u.id, u.email, 'user'
+insert into public.profiles (id, email, phone, display_name, role)
+select
+  u.id,
+  coalesce(u.email, nullif(u.raw_user_meta_data ->> 'email', '')),
+  coalesce(u.phone, nullif(u.raw_user_meta_data ->> 'phone', '')),
+  coalesce(
+    nullif(u.raw_user_meta_data ->> 'display_name', ''),
+    nullif(u.raw_user_meta_data ->> 'full_name', '')
+  ),
+  'user'
 from auth.users as u
 where not exists (select 1 from public.profiles as p where p.id = u.id);
+
+update public.profiles as p
+set
+  email = coalesce(p.email, u.email, nullif(u.raw_user_meta_data ->> 'email', '')),
+  phone = coalesce(p.phone, u.phone, nullif(u.raw_user_meta_data ->> 'phone', '')),
+  display_name = coalesce(
+    p.display_name,
+    nullif(u.raw_user_meta_data ->> 'display_name', ''),
+    nullif(u.raw_user_meta_data ->> 'full_name', '')
+  ),
+  updated_at = now()
+from auth.users as u
+where p.id = u.id
+  and (
+    p.email is null
+    or p.phone is null
+    or p.display_name is null
+  );
 
 alter table public.profiles enable row level security;
 

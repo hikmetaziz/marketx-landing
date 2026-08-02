@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { getActiveStoreMembershipStoreIds } from "@/lib/listings/listing-management-access";
 import type { ListingStatus } from "@/types/live-listing";
 
 export type MyListing = {
@@ -17,10 +18,12 @@ export type MyListing = {
   created_at: string;
   updated_at: string | null;
   expires_at: string | null;
+  deleted_at: string | null;
+  purge_after: string | null;
 };
 
 const MY_LISTING_SELECT =
-  "id, slug, title, price, category, city, status, image_url, image_urls, rejected_reason, view_count, created_at, updated_at, expires_at";
+  "id, slug, title, price, category, city, status, image_url, image_urls, rejected_reason, view_count, created_at, updated_at, expires_at, deleted_at, purge_after";
 
 function mapMyListingRow(row: Record<string, unknown>): MyListing {
   return {
@@ -38,6 +41,8 @@ function mapMyListingRow(row: Record<string, unknown>): MyListing {
     created_at: row.created_at as string,
     updated_at: (row.updated_at as string | null) ?? null,
     expires_at: (row.expires_at as string | null) ?? null,
+    deleted_at: (row.deleted_at as string | null) ?? null,
+    purge_after: (row.purge_after as string | null) ?? null,
   };
 }
 
@@ -48,11 +53,18 @@ export async function getMyListings(userId: string): Promise<MyListing[]> {
 
   try {
     const supabase = await createClient();
-    const { data, error } = await supabase
+    const storeIds = await getActiveStoreMembershipStoreIds(supabase, userId);
+    let query = supabase
       .from("listings")
       .select(MY_LISTING_SELECT)
-      .eq("user_id", userId)
+      .neq("status", "deleted")
       .order("created_at", { ascending: false });
+
+    query = storeIds.length > 0
+      ? query.or(`user_id.eq.${userId},store_id.in.(${storeIds.join(",")})`)
+      : query.eq("user_id", userId);
+
+    const { data, error } = await query;
 
     if (error || !data) {
       return [];

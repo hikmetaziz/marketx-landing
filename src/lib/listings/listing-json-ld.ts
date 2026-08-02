@@ -14,10 +14,11 @@ export type ListingJsonLdInput = {
   imageUrl: string | null;
   category: string;
   city: string;
+  canonicalPath?: string;
 };
 
 export function buildListingJsonLd(listing: ListingJsonLdInput) {
-  const listingUrl = getListingPublicUrl(listing.slug);
+  const listingUrl = listing.canonicalPath ? `${SITE.url}${listing.canonicalPath}` : getListingPublicUrl(listing.slug);
   const image = toAbsoluteImageUrl(listing.imageUrl) ?? getDefaultOgImageUrl();
   const description =
     truncateListingDescription(listing.description) ||
@@ -61,7 +62,7 @@ export function buildListingJsonLd(listing: ListingJsonLdInput) {
         "@type": "ListItem",
         position: 2,
         name: "Elanlar",
-        item: `${SITE.url}/listings`,
+        item: `${SITE.url}/elanlar`,
       },
       {
         "@type": "ListItem",

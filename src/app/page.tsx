@@ -6,7 +6,6 @@ import { CategoryCardsSection } from "@/components/home/CategoryCardsSection";
 import { HeroSection } from "@/components/home/HeroSection";
 import { PopularListingsSection } from "@/components/home/PopularListingsSection";
 import { SearchBarSection } from "@/components/home/SearchBarSection";
-import { TrustValueSection } from "@/components/home/TrustValueSection";
 
 export const metadata: Metadata = {
   ...DEFAULT_METADATA,
@@ -15,14 +14,17 @@ export const metadata: Metadata = {
 
 export default function HomePage() {
   return (
-    <div className="overflow-x-hidden">
-      <div className="hero-gradient-bg">
-        <HeroSection />
-        <SearchBarSection />
+    <main className="overflow-x-hidden bg-[#f6f7f9]">
+      <div className="mx-auto grid w-full max-w-[1560px] min-[1440px]:grid-cols-[170px_minmax(0,1fr)_170px] min-[1440px]:gap-5">
+        <div className="hidden min-[1440px]:block" aria-hidden="true" />
+        <div className="min-w-0">
+          <HeroSection />
+          <SearchBarSection />
+          <CategoryCardsSection />
+          <PopularListingsSection />
+        </div>
+        <div className="hidden min-[1440px]:block" aria-hidden="true" />
       </div>
-      <CategoryCardsSection />
-      <TrustValueSection />
-      <PopularListingsSection />
-    </div>
+    </main>
   );
 }

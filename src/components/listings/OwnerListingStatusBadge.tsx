@@ -6,6 +6,7 @@ const STYLES: Record<ListingStatus, string> = {
   sold: "border-slate-200 bg-slate-100 text-slate-600",
   rejected: "border-red-200 bg-red-50 text-red-700",
   archived: "border-brand-border bg-brand-surface text-brand-muted",
+  deleted: "border-red-200 bg-red-50 text-red-700",
 };
 
 const LABELS: Record<ListingStatus, string> = {
@@ -14,6 +15,7 @@ const LABELS: Record<ListingStatus, string> = {
   sold: "Satıldı",
   rejected: "Rədd edilib",
   archived: "Arxiv",
+  deleted: "Silinib",
 };
 
 type OwnerListingStatusBadgeProps = {

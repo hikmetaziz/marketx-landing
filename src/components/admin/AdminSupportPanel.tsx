@@ -139,11 +139,105 @@ type CreatedStore = {
   claimCodeExpiresAt: string | null;
 };
 
+type StructuredStoreApplicationShadow = {
+  store_name: string | null;
+  category_name: string | null;
+  city: string | null;
+  description: string | null;
+  address: string | null;
+  working_days: string | null;
+  working_hours: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  email: string | null;
+  logo_url: string | null;
+  cover_url: string | null;
+};
+
 function normalizePhone(value: string): string {
   return value
     .replace(/\s/g, "")
     .replace(/^\+?994/, "0")
     .replace(/[^0-9]/g, "");
+}
+
+function normalizeShadowValue(value: string | null | undefined): string {
+  return (value ?? "").trim().replace(/\s+/g, " ");
+}
+
+function readApplicationAssetUrl(body: string, label: string): string {
+  for (const line of body.split(/\r?\n/)) {
+    const trimmed = line.trim();
+
+    if (!trimmed.startsWith(label)) {
+      continue;
+    }
+
+    const value = trimmed.slice(label.length).trim();
+
+    try {
+      const url = new URL(value);
+      return url.protocol === "https:" || url.protocol === "http:"
+        ? url.toString()
+        : "";
+    } catch {
+      return "";
+    }
+  }
+
+  return "";
+}
+
+function compareStructuredStoreApplicationShadow(
+  structured: StructuredStoreApplicationShadow,
+  legacy: ParsedStoreApplication,
+  legacyAssetMessages: { body: unknown }[],
+): string[] {
+  const legacyImages = legacyAssetMessages.reduce(
+    (current, message) => {
+      if (typeof message.body !== "string") {
+        return current;
+      }
+
+      return {
+        logo_url:
+          current.logo_url ||
+          readApplicationAssetUrl(message.body, "Logo:"),
+        cover_url:
+          current.cover_url ||
+          readApplicationAssetUrl(message.body, "Örtük şəkli:"),
+      };
+    },
+    { logo_url: "", cover_url: "" },
+  );
+
+  const expectedWorkingHours =
+    legacy.openingTime && legacy.closingTime
+      ? `${legacy.openingTime}–${legacy.closingTime}`
+      : "";
+
+  const comparisons: Array<[string, string | null, string]> = [
+    ["store_name", structured.store_name, legacy.name],
+    ["category_name", structured.category_name, legacy.category],
+    ["city", structured.city, legacy.city],
+    ["description", structured.description, legacy.description],
+    ["address", structured.address, legacy.address],
+    ["working_days", structured.working_days, legacy.weekdays],
+    ["working_hours", structured.working_hours, expectedWorkingHours],
+    ["phone", structured.phone, legacy.phone],
+    ["whatsapp", structured.whatsapp, legacy.whatsapp],
+    ["email", structured.email, legacy.email],
+    ["logo_url", structured.logo_url, legacyImages.logo_url],
+    ["cover_url", structured.cover_url, legacyImages.cover_url],
+  ];
+
+  return comparisons
+    .filter(
+      ([, structuredValue, legacyValue]) =>
+        normalizeShadowValue(structuredValue) !==
+        normalizeShadowValue(legacyValue),
+    )
+    .map(([field]) => field);
 }
 
 export function AdminSupportPanel() {
@@ -401,12 +495,23 @@ export function AdminSupportPanel() {
       !selectedId ||
       !isNewStoreRequest
     ) {
-      setNewStoreForm(null);
-      setApplicationLoading(false);
-      setApplicationLoadError(null);
-      setApplicationRawMessage("");
-      setCreatedStoreError(null);
-      return;
+      let cancelled = false;
+
+      queueMicrotask(() => {
+        if (cancelled) {
+          return;
+        }
+
+        setNewStoreForm(null);
+        setApplicationLoading(false);
+        setApplicationLoadError(null);
+        setApplicationRawMessage("");
+        setCreatedStoreError(null);
+      });
+
+      return () => {
+        cancelled = true;
+      };
     }
 
     let cancelled = false;
@@ -498,6 +603,52 @@ export function AdminSupportPanel() {
 
       setNewStoreForm(parsed);
       setApplicationLoading(false);
+
+      if (process.env.NODE_ENV !== "production") {
+        void (async () => {
+          const [structuredResult, legacyAssetMessagesResult] =
+            await Promise.all([
+              supabase
+                .from("store_applications")
+                .select(
+                  "store_name, category_name, city, description, address, working_days, working_hours, phone, whatsapp, email, logo_url, cover_url",
+                )
+                .eq("conversation_id", selectedId)
+                .maybeSingle(),
+              supabase
+                .from("messages")
+                .select("body")
+                .eq("conversation_id", selectedId)
+                .order("created_at", { ascending: true })
+                .limit(20),
+            ]);
+
+          if (cancelled) {
+            return;
+          }
+
+          if (structuredResult.error || !structuredResult.data) {
+            return;
+          }
+
+          const mismatchingFields =
+            compareStructuredStoreApplicationShadow(
+              structuredResult.data as StructuredStoreApplicationShadow,
+              parsed,
+              legacyAssetMessagesResult.data ?? [],
+            );
+
+          if (mismatchingFields.length > 0) {
+            console.warn(
+              "Store application structured/legacy mismatch",
+              {
+                conversationId: selectedId,
+                fields: mismatchingFields,
+              },
+            );
+          }
+        })();
+      }
     };
 
     void loadOriginalApplication();

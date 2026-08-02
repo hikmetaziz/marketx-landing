@@ -43,6 +43,16 @@ const STATUS_LABELS: Record<string, string> = {
   closed: "Bağlı",
 };
 
+const APPLICATION_STATUS_LABELS: Record<string, string> = {
+  submitted: "Göndərilib",
+  under_review: "Yoxlanılır",
+  activation_pending: "Aktivasiya gözləyir",
+  approved: "Təsdiqlənib",
+  rejected: "Rədd edilib",
+  cancelled: "Ləğv edilib",
+  needs_review: "Yenidən baxılmalıdır",
+};
+
 const TOPIC_LABELS: Record<string, string> = {
   account: "Hesab",
   store_or_product_complaint: "Mağaza/ məhsul şikayəti",
@@ -139,17 +149,21 @@ type CreatedStore = {
   claimCodeExpiresAt: string | null;
 };
 
-type StructuredStoreApplicationShadow = {
+type StructuredStoreApplication = {
   store_name: string | null;
   category_name: string | null;
+  category_id: string | null;
   city: string | null;
   description: string | null;
   address: string | null;
   working_days: string | null;
   working_hours: string | null;
+  opening_time: string | null;
+  closing_time: string | null;
   phone: string | null;
   whatsapp: string | null;
   email: string | null;
+  status: string | null;
   logo_url: string | null;
   cover_url: string | null;
 };
@@ -189,7 +203,7 @@ function readApplicationAssetUrl(body: string, label: string): string {
 }
 
 function compareStructuredStoreApplicationShadow(
-  structured: StructuredStoreApplicationShadow,
+  structured: StructuredStoreApplication,
   legacy: ParsedStoreApplication,
   legacyAssetMessages: { body: unknown }[],
 ): string[] {
@@ -224,6 +238,8 @@ function compareStructuredStoreApplicationShadow(
     ["address", structured.address, legacy.address],
     ["working_days", structured.working_days, legacy.weekdays],
     ["working_hours", structured.working_hours, expectedWorkingHours],
+    ["opening_time", normalizeApplicationTime(structured.opening_time, ""), legacy.openingTime],
+    ["closing_time", normalizeApplicationTime(structured.closing_time, ""), legacy.closingTime],
     ["phone", structured.phone, legacy.phone],
     ["whatsapp", structured.whatsapp, legacy.whatsapp],
     ["email", structured.email, legacy.email],
@@ -238,6 +254,61 @@ function compareStructuredStoreApplicationShadow(
         normalizeShadowValue(legacyValue),
     )
     .map(([field]) => field);
+}
+
+function normalizeApplicationTime(value: string | null | undefined, fallback: string): string {
+  const trimmed = (value ?? "").trim();
+  const match = trimmed.match(/^([01]\d|2[0-3]):([0-5]\d)/);
+
+  return match ? `${match[1]}:${match[2]}` : fallback;
+}
+
+function parseApplicationWorkingHours(value: string | null | undefined): {
+  openingTime: string;
+  closingTime: string;
+} {
+  const parts = (value ?? "")
+    .split(/\s*[–—-]\s*/, 2)
+    .map((part) => part.trim());
+
+  return {
+    openingTime: normalizeApplicationTime(parts[0], "09:00"),
+    closingTime: normalizeApplicationTime(parts[1], "18:00"),
+  };
+}
+
+function isUsableStructuredApplication(
+  value: StructuredStoreApplication | null,
+): value is StructuredStoreApplication & { store_name: string } {
+  return Boolean(value?.store_name?.trim());
+}
+
+function mapStructuredStoreApplicationToForm(
+  structured: StructuredStoreApplication & { store_name: string },
+  raw: string,
+): NewStoreRequestFields {
+  const parsedHours = parseApplicationWorkingHours(structured.working_hours);
+
+  return {
+    name: structured.store_name.trim(),
+    category: structured.category_name?.trim() ?? "",
+    city: structured.city?.trim() ?? "",
+    description: structured.description?.trim() ?? "",
+    address: structured.address?.trim() ?? "",
+    weekdays: structured.working_days?.trim() ?? "",
+    openingTime: normalizeApplicationTime(
+      structured.opening_time,
+      parsedHours.openingTime,
+    ),
+    closingTime: normalizeApplicationTime(
+      structured.closing_time,
+      parsedHours.closingTime,
+    ),
+    phone: structured.phone?.trim() ?? "",
+    whatsapp: structured.whatsapp?.trim() ?? "",
+    email: structured.email?.trim() ?? "",
+    raw,
+  };
 }
 
 export function AdminSupportPanel() {
@@ -276,6 +347,9 @@ export function AdminSupportPanel() {
 
   const [applicationRawMessage, setApplicationRawMessage] =
     useState("");
+
+  const [applicationStatus, setApplicationStatus] =
+    useState<string | null>(null);
 
   const [creatingStoreId, setCreatingStoreId] =
     useState<string | null>(null);
@@ -506,6 +580,7 @@ export function AdminSupportPanel() {
         setApplicationLoading(false);
         setApplicationLoadError(null);
         setApplicationRawMessage("");
+        setApplicationStatus(null);
         setCreatedStoreError(null);
       });
 
@@ -520,10 +595,11 @@ export function AdminSupportPanel() {
       setApplicationLoading(true);
       setApplicationLoadError(null);
       setApplicationRawMessage("");
+      setApplicationStatus(null);
       setNewStoreForm(null);
       setCreatedStoreError(null);
 
-      const [messageResult, creationResult] =
+      const [messageResult, creationResult, structuredResult, legacyAssetMessagesResult] =
         await Promise.all([
           fetchFirstConversationMessage(
             supabase,
@@ -532,6 +608,19 @@ export function AdminSupportPanel() {
           adminGetStoreApplicationCreation(
             selectedId,
           ),
+          supabase
+            .from("store_applications")
+            .select(
+              "store_name, category_name, category_id, city, description, address, working_days, working_hours, opening_time, closing_time, phone, whatsapp, email, status, logo_url, cover_url",
+            )
+            .eq("conversation_id", selectedId)
+            .maybeSingle(),
+          supabase
+            .from("messages")
+            .select("body")
+            .eq("conversation_id", selectedId)
+            .order("created_at", { ascending: true })
+            .limit(20),
         ]);
 
       if (cancelled) {
@@ -568,6 +657,52 @@ export function AdminSupportPanel() {
 
       setApplicationRawMessage(body);
 
+      const structuredRow =
+        structuredResult.data as StructuredStoreApplication | null;
+      const structuredApplication =
+        isUsableStructuredApplication(structuredRow)
+          ? structuredRow
+          : null;
+
+      if (structuredApplication) {
+        const structuredForm = mapStructuredStoreApplicationToForm(
+          structuredApplication,
+          body,
+        );
+
+        setApplicationStatus(structuredApplication.status);
+        setNewStoreForm(structuredForm);
+        setApplicationLoading(false);
+
+        const parsedForShadow = isStoreApplicationMessage(body)
+          ? parseStoreApplicationMessage(body)
+          : null;
+
+        if (
+          process.env.NODE_ENV !== "production" &&
+          parsedForShadow
+        ) {
+          const mismatchingFields =
+            compareStructuredStoreApplicationShadow(
+              structuredApplication,
+              parsedForShadow,
+              legacyAssetMessagesResult.data ?? [],
+            );
+
+          if (mismatchingFields.length > 0) {
+            console.warn(
+              "Store application structured/legacy mismatch",
+              {
+                conversationId: selectedId,
+                fields: mismatchingFields,
+              },
+            );
+          }
+        }
+
+        return;
+      }
+
       if (messageResult.error) {
         setApplicationLoadError(
           "Müraciətin ilkin mesajı yüklənmədi.",
@@ -602,38 +737,14 @@ export function AdminSupportPanel() {
       }
 
       setNewStoreForm(parsed);
+      setApplicationStatus(null);
       setApplicationLoading(false);
 
       if (process.env.NODE_ENV !== "production") {
-        void (async () => {
-          const [structuredResult, legacyAssetMessagesResult] =
-            await Promise.all([
-              supabase
-                .from("store_applications")
-                .select(
-                  "store_name, category_name, city, description, address, working_days, working_hours, phone, whatsapp, email, logo_url, cover_url",
-                )
-                .eq("conversation_id", selectedId)
-                .maybeSingle(),
-              supabase
-                .from("messages")
-                .select("body")
-                .eq("conversation_id", selectedId)
-                .order("created_at", { ascending: true })
-                .limit(20),
-            ]);
-
-          if (cancelled) {
-            return;
-          }
-
-          if (structuredResult.error || !structuredResult.data) {
-            return;
-          }
-
+        if (!structuredResult.error && structuredResult.data) {
           const mismatchingFields =
             compareStructuredStoreApplicationShadow(
-              structuredResult.data as StructuredStoreApplicationShadow,
+              structuredResult.data as StructuredStoreApplication,
               parsed,
               legacyAssetMessagesResult.data ?? [],
             );
@@ -647,7 +758,7 @@ export function AdminSupportPanel() {
               },
             );
           }
-        })();
+        }
       }
     };
 
@@ -941,6 +1052,7 @@ export function AdminSupportPanel() {
     setNewStoreForm(null);
     setApplicationLoadError(null);
     setApplicationRawMessage("");
+    setApplicationStatus(null);
     setCreatedStoreError(null);
   };
 
@@ -1044,6 +1156,7 @@ export function AdminSupportPanel() {
     setNewStoreForm(null);
     setApplicationLoadError(null);
     setApplicationRawMessage("");
+    setApplicationStatus(null);
     setCreatedStoreError(null);
 
     if (tab === "store_applications") {
@@ -1378,6 +1491,18 @@ export function AdminSupportPanel() {
                       <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-semibold text-red-700">
                         {createdStoreError}
                       </p>
+                    ) : null}
+
+                    {applicationStatus ? (
+                      <div className="flex flex-wrap items-center gap-2 rounded-lg border border-brand-border/80 bg-brand-surface/40 px-3 py-2 text-xs text-brand-muted">
+                        <span className="font-bold">
+                          Müraciət statusu:
+                        </span>
+                        <span className="rounded-md bg-white px-2 py-0.5 font-semibold text-brand-text">
+                          {APPLICATION_STATUS_LABELS[applicationStatus] ??
+                            applicationStatus}
+                        </span>
+                      </div>
                     ) : null}
 
                     {createdStore ? (

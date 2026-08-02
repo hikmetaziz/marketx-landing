@@ -357,6 +357,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
   const [errorMessage, setErrorMessage] = useState("");
   const messagesRef = useRef<Message[]>([]);
   const sendingRef = useRef(false);
+  const draftInputRef = useRef<HTMLTextAreaElement>(null);
   const messageListRef = useRef<HTMLDivElement>(null);
   const listEndRef = useRef<HTMLDivElement>(null);
   const messageElementsRef = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -724,6 +725,17 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
     }
   };
 
+  const handleTemplateSelect = useCallback((text: string) => {
+    setDraft(text);
+    window.requestAnimationFrame(() => {
+      const input = draftInputRef.current;
+      if (!input) return;
+
+      input.focus();
+      input.setSelectionRange(text.length, text.length);
+    });
+  }, []);
+
   const handleArchive = async () => {
     if (!supabase || !user || archiving) return;
     const confirmed = window.confirm("Yazışmanı siyahıdan silmək istəyirsiniz? Yeni mesaj gəlsə, yenidən görünəcək.");
@@ -1081,7 +1093,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
         <>
           {messageTemplates.length > 0 ? (
             <div className="border-t border-brand-border/70 px-3 pt-3">
-              <MessageTemplateChips templates={messageTemplates} onSelect={(text) => void handleSend(text)} disabled={sending} />
+              <MessageTemplateChips templates={messageTemplates} onSelect={handleTemplateSelect} disabled={sending} />
             </div>
           ) : null}
           <form
@@ -1092,6 +1104,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
             }}
           >
             <textarea
+              ref={draftInputRef}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               placeholder="Mesaj yazın..."

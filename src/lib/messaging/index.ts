@@ -46,6 +46,16 @@ type ReadState = {
   archived_at: string | null;
 };
 
+export type MessagingRealtimeStatus =
+  | "SUBSCRIBED"
+  | "CHANNEL_ERROR"
+  | "TIMED_OUT"
+  | "CLOSED";
+
+type MessagingRealtimeOptions = {
+  onStatus?: (status: MessagingRealtimeStatus) => void;
+};
+
 const CONVERSATION_SELECT = `
   id,
   listing_id,
@@ -439,10 +449,30 @@ export async function fetchMessages(
     .from("messages")
     .select("id, conversation_id, sender_id, sender_context, body, created_at, metadata")
     .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true });
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
 
   if (error) return { data: [], error: translateMessagingError(error.message) };
   return { data: ((data as Message[]) ?? []).map((row) => ({ ...row, metadata: row.metadata ?? {} })), error: null };
+}
+
+export function mergeMessages(
+  current: Message[],
+  incoming: Message[],
+): Message[] {
+  const messageMap = new Map(
+    current.map((message) => [message.id, message]),
+  );
+
+  for (const message of incoming) {
+    messageMap.set(message.id, message);
+  }
+
+  return [...messageMap.values()].sort(
+    (left, right) =>
+      left.created_at.localeCompare(right.created_at) ||
+      left.id.localeCompare(right.id),
+  );
 }
 
 export async function fetchFirstConversationMessage(
@@ -454,6 +484,7 @@ export async function fetchFirstConversationMessage(
     .select("id, conversation_id, sender_id, sender_context, body, created_at, metadata")
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true })
+    .order("id", { ascending: true })
     .limit(1)
     .maybeSingle();
 
@@ -476,17 +507,26 @@ export async function fetchFirstConversationMessage(
 export async function fetchMessagesAfter(
   supabase: SupabaseClient,
   conversationId: string,
-  afterCreatedAt: string,
+  after: Pick<Message, "created_at" | "id">,
 ): Promise<{ data: Message[]; error: string | null }> {
   const { data, error } = await supabase
     .from("messages")
     .select("id, conversation_id, sender_id, sender_context, body, created_at, metadata")
     .eq("conversation_id", conversationId)
-    .gt("created_at", afterCreatedAt)
-    .order("created_at", { ascending: true });
+    .gte("created_at", after.created_at)
+    .order("created_at", { ascending: true })
+    .order("id", { ascending: true });
 
   if (error) return { data: [], error: translateMessagingError(error.message) };
-  return { data: ((data as Message[]) ?? []).map((row) => ({ ...row, metadata: row.metadata ?? {} })), error: null };
+
+  const messages = ((data as Message[]) ?? [])
+    .map((row) => ({ ...row, metadata: row.metadata ?? {} }))
+    .filter((message) => {
+      const createdAtComparison = message.created_at.localeCompare(after.created_at);
+      return createdAtComparison > 0 || (createdAtComparison === 0 && message.id.localeCompare(after.id) > 0);
+    });
+
+  return { data: messages, error: null };
 }
 
 export async function sendConversationMessage(
@@ -632,6 +672,7 @@ export function subscribeToMessages(
   conversationId: string,
   onInsert: (message: Message) => void,
   onUpdate?: (message: Message) => void,
+  options?: MessagingRealtimeOptions,
 ): () => void {
   const channel = supabase
     .channel(uniqueRealtimeTopic(`messages:${conversationId}`))
@@ -645,7 +686,9 @@ export function subscribeToMessages(
       { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${conversationId}` },
       (payload) => onUpdate?.({ ...(payload.new as Message), metadata: (payload.new as Message).metadata ?? {} }),
     )
-    .subscribe();
+    .subscribe((status) => {
+      options?.onStatus?.(status as MessagingRealtimeStatus);
+    });
 
   return () => {
     void supabase.removeChannel(channel);
@@ -675,6 +718,7 @@ export function subscribeToMyInbox(
   supabase: SupabaseClient,
   userId: string,
   onChange: () => void,
+  options?: MessagingRealtimeOptions,
 ): () => void {
   const channel = supabase
     .channel(uniqueRealtimeTopic(`inbox:${userId}`))
@@ -682,7 +726,9 @@ export function subscribeToMyInbox(
     .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversations" }, () => onChange())
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "conversation_reads", filter: `user_id=eq.${userId}` }, () => onChange())
     .on("postgres_changes", { event: "UPDATE", schema: "public", table: "conversation_reads", filter: `user_id=eq.${userId}` }, () => onChange())
-    .subscribe();
+    .subscribe((status) => {
+      options?.onStatus?.(status as MessagingRealtimeStatus);
+    });
 
   return () => {
     void supabase.removeChannel(channel);

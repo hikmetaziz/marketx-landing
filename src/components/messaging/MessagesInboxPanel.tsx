@@ -16,6 +16,7 @@ import {
 import {
   fetchMyConversations,
   subscribeToMyInbox,
+  type MessagingRealtimeStatus,
 } from "@/lib/messaging";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useAuthUser } from "@/lib/supabase/use-auth-user";
@@ -531,10 +532,22 @@ export function MessagesInboxPanel() {
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const loadingRef = useRef(false);
+  const mountedRef = useRef(false);
+  const fallbackPollingRef = useRef<number | null>(null);
+  const focusSyncTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    mountedRef.current = true;
+
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const load = useCallback(
-    async (silent = false) => {
+    async (silent = false, reportErrors = true) => {
       if (!supabase || !user) {
+        if (!mountedRef.current) return;
         setItems([]);
         setLoading(false);
         return;
@@ -556,9 +569,25 @@ export function MessagesInboxPanel() {
           user.id,
         );
 
+        if (!mountedRef.current) {
+          return;
+        }
+
+        if (error) {
+          if (reportErrors) {
+            setErrorMessage(error);
+          }
+          return;
+        }
+
         setItems(data);
-        setErrorMessage(error ?? "");
+        setErrorMessage("");
       } finally {
+        if (!mountedRef.current) {
+          loadingRef.current = false;
+          return;
+        }
+
         if (!silent) {
           setLoading(false);
         }
@@ -568,6 +597,33 @@ export function MessagesInboxPanel() {
     },
     [supabase, user],
   );
+
+  const clearFallbackPolling = useCallback(() => {
+    if (fallbackPollingRef.current == null) return;
+    window.clearInterval(fallbackPollingRef.current);
+    fallbackPollingRef.current = null;
+  }, []);
+
+  const startFallbackPolling = useCallback(() => {
+    if (fallbackPollingRef.current != null) return;
+
+    fallbackPollingRef.current = window.setInterval(
+      () => void load(true, false),
+      10000,
+    );
+  }, [load]);
+
+  const handleRealtimeStatus = useCallback((status: MessagingRealtimeStatus) => {
+    if (status === "SUBSCRIBED") {
+      clearFallbackPolling();
+      void load(true, false);
+      return;
+    }
+
+    if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+      startFallbackPolling();
+    }
+  }, [clearFallbackPolling, load, startFallbackPolling]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(false), 0);
@@ -586,32 +642,52 @@ export function MessagesInboxPanel() {
       void load(true);
     };
 
+    let active = true;
     const unsubscribe = subscribeToMyInbox(
       supabase,
       user.id,
       () => void load(true),
+      {
+        onStatus: (status) => {
+          if (active) handleRealtimeStatus(status);
+        },
+      },
     );
 
-    const interval = window.setInterval(() => void load(true), 10000);
-
     const onVisible = () => {
-      if (document.visibilityState === "visible") {
-        void load(true);
+      if (document.visibilityState !== "visible") {
+        return;
       }
+
+      if (focusSyncTimerRef.current != null) {
+        window.clearTimeout(focusSyncTimerRef.current);
+      }
+
+      focusSyncTimerRef.current = window.setTimeout(() => {
+        focusSyncTimerRef.current = null;
+        void load(true);
+      }, 80);
     };
 
     document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("focus", onVisible);
     window.addEventListener(MESSAGES_READ_EVENT, onMessagesRead);
     window.addEventListener(LEGACY_MESSAGES_READ_EVENT, onMessagesRead);
 
     return () => {
+      active = false;
       unsubscribe();
-      window.clearInterval(interval);
+      clearFallbackPolling();
+      if (focusSyncTimerRef.current != null) {
+        window.clearTimeout(focusSyncTimerRef.current);
+        focusSyncTimerRef.current = null;
+      }
       document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("focus", onVisible);
       window.removeEventListener(MESSAGES_READ_EVENT, onMessagesRead);
       window.removeEventListener(LEGACY_MESSAGES_READ_EVENT, onMessagesRead);
     };
-  }, [load, supabase, user]);
+  }, [clearFallbackPolling, handleRealtimeStatus, load, supabase, user]);
 
   if (!isSupabaseConfigured()) {
     return (

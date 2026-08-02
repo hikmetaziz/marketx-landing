@@ -28,8 +28,10 @@ import {
   fetchMessages,
   fetchMessagesAfter,
   markConversationRead,
+  mergeMessages,
   sendConversationMessage,
   subscribeToMessages,
+  type MessagingRealtimeStatus,
 } from "@/lib/messaging";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useAuthUser } from "@/lib/supabase/use-auth-user";
@@ -356,6 +358,12 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
   const messageElementsRef = useRef<Map<string, HTMLDivElement>>(new Map());
   const readObserverRef = useRef<IntersectionObserver | null>(null);
   const markedReadMessageIdsRef = useRef<Set<string>>(new Set());
+  const loadRequestRef = useRef(0);
+  const loadedConversationIdRef = useRef("");
+  const fallbackPollingRef = useRef<number | null>(null);
+  const syncInFlightRef = useRef(false);
+  const refreshInFlightRef = useRef(false);
+  const focusSyncTimerRef = useRef<number | null>(null);
 
   const markNewestVisibleIncomingMessage = useCallback(() => {
     if (!supabase || !user) return;
@@ -453,55 +461,132 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
     listEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "auto" });
   }, []);
 
-  const appendMessage = useCallback(
-    (message: Message) => {
-      setMessages((prev) => {
-        if (prev.some((item) => item.id === message.id)) return prev;
-        const next = [...prev, message];
-        messagesRef.current = next;
-        return next;
-      });
-      window.setTimeout(() => scrollToBottom(true), 80);
-    },
-    [scrollToBottom],
-  );
+  const mergeMessageBatch = useCallback((incoming: Message[]) => {
+    const activeConversationId = loadedConversationIdRef.current;
+    const scopedIncoming = activeConversationId
+      ? incoming.filter((message) => message.conversation_id === activeConversationId)
+      : incoming;
 
-  const replaceMessage = useCallback((message: Message) => {
-    setMessages((prev) => {
-      const index = prev.findIndex((item) => item.id === message.id);
-      if (index === -1) return prev;
-      const next = [...prev];
-      next[index] = message;
+    if (scopedIncoming.length === 0) return;
+
+    setMessages((current) => {
+      const next = mergeMessages(current, scopedIncoming);
       messagesRef.current = next;
       return next;
     });
   }, []);
 
-  const syncNewMessages = useCallback(async () => {
-    if (!supabase) return;
-    const last = messagesRef.current.at(-1);
-    if (!last) {
-      const { data, error } = await fetchMessages(supabase, conversationId);
-      if (error) {
-        setErrorMessage(error);
+  const appendMessage = useCallback(
+    (message: Message) => {
+      mergeMessageBatch([message]);
+      window.setTimeout(() => scrollToBottom(true), 80);
+    },
+    [mergeMessageBatch, scrollToBottom],
+  );
+
+  const replaceMessage = useCallback((message: Message) => {
+    mergeMessageBatch([message]);
+  }, [mergeMessageBatch]);
+
+  const syncNewMessages = useCallback(async (options: { reportErrors?: boolean } = {}) => {
+    if (!supabase || syncInFlightRef.current) return;
+
+    const reportErrors = options.reportErrors ?? true;
+    const expectedConversationId = conversationId;
+    syncInFlightRef.current = true;
+
+    try {
+      const last = messagesRef.current.at(-1);
+      if (!last) {
+        const { data, error } = await fetchMessages(supabase, conversationId);
+        if (loadedConversationIdRef.current !== expectedConversationId) return;
+        if (error) {
+          if (reportErrors) setErrorMessage(error);
+          return;
+        }
+        mergeMessageBatch(data);
         return;
       }
-      setMessages(data);
-      messagesRef.current = data;
+
+      const { data, error } = await fetchMessagesAfter(supabase, conversationId, {
+        created_at: last.created_at,
+        id: last.id,
+      });
+      if (loadedConversationIdRef.current !== expectedConversationId) return;
+      if (error) {
+        if (reportErrors) setErrorMessage(error);
+        return;
+      }
+      mergeMessageBatch(data);
+      if (data.length > 0) window.setTimeout(() => scrollToBottom(true), 80);
+    } finally {
+      syncInFlightRef.current = false;
+    }
+  }, [conversationId, mergeMessageBatch, scrollToBottom, supabase]);
+
+  const refreshMessages = useCallback(async (options: { reportErrors?: boolean } = {}) => {
+    if (!supabase || refreshInFlightRef.current) return;
+
+    const reportErrors = options.reportErrors ?? true;
+    const expectedConversationId = conversationId;
+    refreshInFlightRef.current = true;
+
+    try {
+      const { data, error } = await fetchMessages(supabase, conversationId);
+      if (loadedConversationIdRef.current !== expectedConversationId) return;
+      if (error) {
+        if (reportErrors) setErrorMessage(error);
+        return;
+      }
+
+      mergeMessageBatch(data);
+      window.setTimeout(() => markNewestVisibleIncomingMessage(), 120);
+    } finally {
+      refreshInFlightRef.current = false;
+    }
+  }, [conversationId, markNewestVisibleIncomingMessage, mergeMessageBatch, supabase]);
+
+  const clearFallbackPolling = useCallback(() => {
+    if (fallbackPollingRef.current == null) return;
+    window.clearInterval(fallbackPollingRef.current);
+    fallbackPollingRef.current = null;
+  }, []);
+
+  const startFallbackPolling = useCallback(() => {
+    if (fallbackPollingRef.current != null) return;
+
+    fallbackPollingRef.current = window.setInterval(
+      () => void syncNewMessages({ reportErrors: false }),
+      5000,
+    );
+  }, [syncNewMessages]);
+
+  const handleRealtimeStatus = useCallback((status: MessagingRealtimeStatus) => {
+    if (status === "SUBSCRIBED") {
+      clearFallbackPolling();
+      void refreshMessages({ reportErrors: false });
       return;
     }
-    const { data, error } = await fetchMessagesAfter(supabase, conversationId, last.created_at);
-    if (error) {
-      setErrorMessage(error);
-      return;
+
+    if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+      startFallbackPolling();
     }
-    for (const message of data) appendMessage(message);
-  }, [appendMessage, conversationId, supabase]);
+  }, [clearFallbackPolling, refreshMessages, startFallbackPolling]);
 
   useEffect(() => {
     if (!supabase || !user || !conversationId) return;
 
     let cancelled = false;
+    const requestId = loadRequestRef.current + 1;
+    loadRequestRef.current = requestId;
+
+    if (loadedConversationIdRef.current !== conversationId) {
+      loadedConversationIdRef.current = conversationId;
+      setConversation(null);
+      setMessages([]);
+      messagesRef.current = [];
+      setErrorMessage("");
+    }
 
     void (async () => {
       setLoading(true);
@@ -510,18 +595,19 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
         fetchMessages(supabase, conversationId),
       ]);
 
-      if (cancelled) return;
+      if (cancelled || loadRequestRef.current !== requestId) return;
 
       if (detailRes.error || !detailRes.data) {
         setErrorMessage(detailRes.error ?? "Söhbət tapılmadı");
         setConversation(null);
+        setMessages([]);
+        messagesRef.current = [];
         setLoading(false);
         return;
       }
 
       setConversation(detailRes.data);
-      setMessages(messagesRes.data);
-      messagesRef.current = messagesRes.data;
+      mergeMessageBatch(messagesRes.data ?? []);
       setErrorMessage(messagesRes.error ?? "");
       setLoading(false);
       window.setTimeout(() => scrollToBottom(false), 100);
@@ -530,52 +616,61 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
     return () => {
       cancelled = true;
     };
-  }, [conversationId, scrollToBottom, supabase, user]);
+  }, [conversationId, mergeMessageBatch, scrollToBottom, supabase, user]);
 
   useEffect(() => {
     if (!supabase || !conversationId) return;
-    return subscribeToMessages(
+    let active = true;
+    const unsubscribe = subscribeToMessages(
       supabase,
       conversationId,
       (message) => {
         appendMessage(message);
       },
       replaceMessage,
+      {
+        onStatus: (status) => {
+          if (active) handleRealtimeStatus(status);
+        },
+      },
     );
-  }, [appendMessage, conversationId, replaceMessage, supabase]);
 
-  useEffect(() => {
-    if (!supabase) return;
-    const interval = window.setInterval(() => void syncNewMessages(), 5000);
-    return () => window.clearInterval(interval);
-  }, [supabase, syncNewMessages]);
+    return () => {
+      active = false;
+      unsubscribe();
+      clearFallbackPolling();
+    };
+  }, [appendMessage, clearFallbackPolling, conversationId, handleRealtimeStatus, replaceMessage, supabase]);
 
   useEffect(() => {
     if (!supabase || !user || !conversationId) return;
-
-    const refreshMessages = async () => {
-      const { data, error } = await fetchMessages(supabase, conversationId);
-      if (error) {
-        setErrorMessage(error);
-        return;
-      }
-
-      setMessages(data);
-      messagesRef.current = data;
-      window.setTimeout(() => markNewestVisibleIncomingMessage(), 120);
-    };
+    let cancelled = false;
 
     const onVisible = () => {
-      if (document.visibilityState === "visible") void refreshMessages();
+      if (document.visibilityState !== "visible") return;
+
+      if (focusSyncTimerRef.current != null) {
+        window.clearTimeout(focusSyncTimerRef.current);
+      }
+
+      focusSyncTimerRef.current = window.setTimeout(() => {
+        focusSyncTimerRef.current = null;
+        if (!cancelled) void refreshMessages();
+      }, 80);
     };
 
     window.addEventListener("focus", onVisible);
     document.addEventListener("visibilitychange", onVisible);
     return () => {
+      cancelled = true;
+      if (focusSyncTimerRef.current != null) {
+        window.clearTimeout(focusSyncTimerRef.current);
+        focusSyncTimerRef.current = null;
+      }
       window.removeEventListener("focus", onVisible);
       document.removeEventListener("visibilitychange", onVisible);
     };
-  }, [conversationId, markNewestVisibleIncomingMessage, supabase, user]);
+  }, [conversationId, refreshMessages, supabase, user]);
 
   const handleSend = async (text?: string) => {
     const source = text ?? draft;

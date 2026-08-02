@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { compressImageFile, LISTING_IMAGE_ACCEPT } from "@/lib/listings/upload";
+import { mapMessagingError } from "@/lib/messaging/errors";
 
 export const SUPPORT_ATTACHMENT_ACCEPT = LISTING_IMAGE_ACCEPT;
 export const SUPPORT_ATTACHMENT_MAX_FILES = 3;
@@ -55,14 +56,14 @@ export async function uploadSupportAttachments(
         .upload(path, blob, { contentType, upsert: false });
 
       if (uploadError) {
-        errors.push(uploadError.message);
+        errors.push(mapMessagingError(uploadError, "upload_attachment").message);
         continue;
       }
 
       const { data } = supabase.storage.from("listing-images").getPublicUrl(path);
       urls.push(data.publicUrl);
     } catch (error) {
-      errors.push(error instanceof Error ? error.message : `${file.name} yüklənmədi`);
+      errors.push(mapMessagingError(error, "upload_attachment").message);
     }
   }
 

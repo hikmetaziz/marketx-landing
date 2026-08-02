@@ -1,6 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { translateSupabaseError } from "@/lib/listings/errors";
+import {
+  mapMessagingError,
+  type MessagingErrorContext,
+} from "@/lib/messaging/errors";
 import type { CustomerSupportTopic, StoreSupportTopic } from "@/lib/messaging-contract/contract";
 import type {
   AdminCustomerStoreConversationSummary,
@@ -115,12 +118,15 @@ function unwrapOne<T>(value: T | T[] | null): T | null {
   return Array.isArray(value) ? (value[0] ?? null) : value;
 }
 
-function translateMessagingError(message: string): string {
-  return translateSupabaseError(message);
+function translateMessagingError(
+  error: unknown,
+  context: MessagingErrorContext,
+): string {
+  return mapMessagingError(error, context).message;
 }
 
-function isStoreNotMessageableError(error: { code?: string; message?: string }): boolean {
-  return error.code === "23514" && (error.message ?? "").includes("store_not_messageable");
+function conversationOpenError(error: unknown): string {
+  return translateMessagingError(error, "open_conversation");
 }
 
 function mapConversation(row: ConversationRow, userId?: string): ConversationDetail {
@@ -258,22 +264,7 @@ export async function getOrCreateCustomerStoreConversation(
   });
 
   if (error || !data) {
-    if (error && isStoreNotMessageableError(error)) {
-      return {
-        conversationId: null,
-        error: "Bu mağaza hazırda aktiv deyil və mesaj qəbul etmir.",
-      };
-    }
-
-    if (error) {
-      console.error("Customer-store RPC failed", {
-        code: error.code,
-        message: error.message,
-        details: error.details,
-        hint: error.hint,
-      });
-    }
-    return { conversationId: null, error: error ? translateMessagingError(error.message) : "Söhbət açılmadı." };
+    return { conversationId: null, error: error ? conversationOpenError(error) : "Söhbət açılmadı." };
   }
 
   return { conversationId: String(data), error: null };
@@ -289,7 +280,7 @@ export async function getOrCreateCustomerSupportConversation(
   });
 
   if (error || !data) {
-    return { conversationId: null, error: error ? translateMessagingError(error.message) : "Dəstək söhbəti açılmadı." };
+    return { conversationId: null, error: error ? conversationOpenError(error) : "Dəstək söhbəti açılmadı." };
   }
 
   return { conversationId: String(data), error: null };
@@ -306,7 +297,7 @@ export async function getOrCreateStoreSupportConversation(
   });
 
   if (error || !data) {
-    return { conversationId: null, error: error ? translateMessagingError(error.message) : "Dəstək söhbəti açılmadı." };
+    return { conversationId: null, error: error ? conversationOpenError(error) : "Dəstək söhbəti açılmadı." };
   }
 
   return { conversationId: String(data), error: null };
@@ -324,7 +315,7 @@ export async function fetchConversationDetail(
     .maybeSingle();
 
   if (error || !data) {
-    return { data: null, error: error ? translateMessagingError(error.message) : "Söhbət tapılmadı." };
+    return { data: null, error: error ? translateMessagingError(error, "load_messages") : "Söhbət tapılmadı." };
   }
 
   return { data: mapConversation(data as ConversationRow, userId), error: null };
@@ -340,7 +331,7 @@ export async function fetchMyConversations(
     .order("last_message_at", { ascending: false, nullsFirst: false })
     .order("updated_at", { ascending: false });
 
-  if (error) return { data: [], error: translateMessagingError(error.message) };
+  if (error) return { data: [], error: translateMessagingError(error, "load_inbox") };
   return { data: await toPreviews(supabase, (data ?? []) as ConversationRow[], userId), error: null };
 }
 
@@ -357,7 +348,7 @@ export async function fetchStoreConversations(
     .order("last_message_at", { ascending: false, nullsFirst: false })
     .order("updated_at", { ascending: false });
 
-  if (error) return { data: [], error: translateMessagingError(error.message) };
+  if (error) return { data: [], error: translateMessagingError(error, "load_inbox") };
   return { data: await toPreviews(supabase, (data ?? []) as ConversationRow[], userId), error: null };
 }
 
@@ -383,7 +374,7 @@ export async function fetchAdminSupportConversations(
     p_offset: input.offset ?? 0,
   });
 
-  if (error) return { data: [], error: translateMessagingError(error.message) };
+  if (error) return { data: [], error: translateMessagingError(error, "load_inbox") };
   return { data: await filterArchivedSupportSummaries(supabase, (data ?? []) as AdminSupportConversationSummary[], input.userId), error: null };
 }
 
@@ -396,7 +387,7 @@ export async function fetchAdminCustomerStoreQueue(
     p_offset: input.offset ?? 0,
   });
 
-  if (error) return { data: [], error: translateMessagingError(error.message) };
+  if (error) return { data: [], error: translateMessagingError(error, "load_inbox") };
 
   return {
     data: ((data ?? []) as AdminCustomerStoreConversationSummaryRow[]).map((row) => ({
@@ -418,7 +409,7 @@ export async function auditCustomerStoreConversationAccess(
   });
 
   if (error || !data) {
-    return { data: null, error: error ? translateMessagingError(error.message) : "Söhbət açıla bilmədi." };
+    return { data: null, error: error ? translateMessagingError(error, "load_messages") : "Söhbət açıla bilmədi." };
   }
 
   return { data: data as Conversation, error: null };
@@ -435,7 +426,7 @@ export async function auditStoreSupportConversationAccess(
   });
 
   if (error || !data) {
-    return { data: null, error: error ? translateMessagingError(error.message) : "Söhbət açıla bilmədi." };
+    return { data: null, error: error ? translateMessagingError(error, "load_messages") : "Söhbət açıla bilmədi." };
   }
 
   return { data: data as Conversation, error: null };
@@ -452,7 +443,7 @@ export async function fetchMessages(
     .order("created_at", { ascending: true })
     .order("id", { ascending: true });
 
-  if (error) return { data: [], error: translateMessagingError(error.message) };
+  if (error) return { data: [], error: translateMessagingError(error, "load_messages") };
   return { data: ((data as Message[]) ?? []).map((row) => ({ ...row, metadata: row.metadata ?? {} })), error: null };
 }
 
@@ -489,7 +480,7 @@ export async function fetchFirstConversationMessage(
     .maybeSingle();
 
   if (error) {
-    return { data: null, error: translateMessagingError(error.message) };
+    return { data: null, error: translateMessagingError(error, "load_messages") };
   }
 
   if (!data) {
@@ -517,7 +508,7 @@ export async function fetchMessagesAfter(
     .order("created_at", { ascending: true })
     .order("id", { ascending: true });
 
-  if (error) return { data: [], error: translateMessagingError(error.message) };
+  if (error) return { data: [], error: translateMessagingError(error, "load_messages") };
 
   const messages = ((data as Message[]) ?? [])
     .map((row) => ({ ...row, metadata: row.metadata ?? {} }))
@@ -544,7 +535,7 @@ export async function sendConversationMessage(
   });
 
   if (error || !data) {
-    return { data: null, error: error ? translateMessagingError(error.message) : "Mesaj göndərilmədi." };
+    return { data: null, error: error ? translateMessagingError(error, "send_message") : "Mesaj göndərilmədi." };
   }
 
   const message = data as Message;
@@ -564,12 +555,7 @@ export async function editConversationMessage(
   });
 
   if (error || !data) {
-    const message = error?.message ?? "";
-    const lowerMessage = message.toLowerCase();
-    if (lowerMessage.includes("edit_conversation_message") && lowerMessage.includes("function")) {
-      return { data: null, error: "Mesajı dəyişmək üçün SQL migration tətbiq olunmalıdır." };
-    }
-    return { data: null, error: error ? translateMessagingError(message) : "Mesaj dəyişdirilmədi." };
+    return { data: null, error: error ? translateMessagingError(error, "edit_message") : "Mesaj dəyişdirilmədi." };
   }
 
   const message = data as Message;
@@ -585,12 +571,7 @@ export async function deleteConversationMessageText(
   });
 
   if (error || !data) {
-    const message = error?.message ?? "";
-    const lowerMessage = message.toLowerCase();
-    if (lowerMessage.includes("delete_conversation_message_text") && lowerMessage.includes("function")) {
-      return { data: null, error: "Mesajı silmək üçün SQL migration tətbiq olunmalıdır." };
-    }
-    return { data: null, error: error ? translateMessagingError(message) : "Mesaj silinmədi." };
+    return { data: null, error: error ? translateMessagingError(error, "delete_message") : "Mesaj silinmədi." };
   }
 
   const message = data as Message;
@@ -607,7 +588,7 @@ export async function markConversationRead(
     p_last_read_message_id: lastReadMessageId ?? null,
   });
 
-  return { error: error ? translateMessagingError(error.message) : null };
+  return { error: error ? translateMessagingError(error, "mark_read") : null };
 }
 
 export async function archiveConversationForCurrentUser(
@@ -622,7 +603,7 @@ export async function archiveConversationForCurrentUser(
   );
 
   return {
-    error: error ? translateMessagingError(error.message) : null,
+    error: error ? translateMessagingError(error, "archive_conversation") : null,
   };
 }
 
@@ -635,15 +616,7 @@ export async function blockCustomerStoreConversation(
     p_reason: input.reason ?? "messaging_block",
   });
 
-  if (!error) return { error: null };
-
-  const errorMessage = String(error.message ?? "");
-  const lowerMessage = errorMessage.toLowerCase();
-  if (lowerMessage.includes("block_customer_store_conversation") && lowerMessage.includes("function")) {
-    return { error: "Blok funksiyası üçün SQL migration tətbiq olunmalıdır." };
-  }
-
-  return { error: translateMessagingError(errorMessage) };
+  return { error: error ? translateMessagingError(error, "block_conversation") : null };
 }
 
 export async function closeConversation(
@@ -651,7 +624,7 @@ export async function closeConversation(
   conversationId: string,
 ): Promise<{ error: string | null }> {
   const { error } = await supabase.rpc("close_conversation", { p_conversation_id: conversationId });
-  return { error: error ? translateMessagingError(error.message) : null };
+  return { error: error ? translateMessagingError(error, "close_conversation") : null };
 }
 
 export async function reportConversation(
@@ -664,7 +637,7 @@ export async function reportConversation(
     p_reason: input.reason,
     p_details: input.details ?? null,
   });
-  return { error: error ? translateMessagingError(error.message) : null };
+  return { error: error ? translateMessagingError(error, "report_conversation") : null };
 }
 
 export function subscribeToMessages(

@@ -33,6 +33,10 @@ import {
   subscribeToMessages,
   type MessagingRealtimeStatus,
 } from "@/lib/messaging";
+import {
+  isMessagingAbortError,
+  mapMessagingError,
+} from "@/lib/messaging/errors";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useAuthUser } from "@/lib/supabase/use-auth-user";
 import type { ConversationDetail, Message, StoreApplication } from "@/types/message";
@@ -711,7 +715,8 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
         if (!text) setDraft("");
       }
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Mesaj göndərilmədi.");
+      if (isMessagingAbortError(error)) return;
+      setErrorMessage(mapMessagingError(error, "send_message").message);
       setLastFailedDraft(validation.body);
     } finally {
       sendingRef.current = false;

@@ -199,12 +199,9 @@ function titleForConversation(conversation: ConversationDetail): string {
 
 function templateAudienceForConversation(
   conversation: ConversationDetail,
-  userId: string,
-  canAccessSupportPanel: boolean,
 ): MessageTemplateAudience | null {
   if (conversation.conversation_type !== "customer_store") return null;
-  if (conversation.customer_user_id === userId) return "customer";
-  return canAccessSupportPanel ? "support" : "store";
+  return conversation.viewer_role;
 }
 
 function messageMetadataText(message: Message, key: string): string | null {
@@ -341,7 +338,7 @@ function emptyConversationCopy(conversation: ConversationDetail): { title: strin
 
 export function ChatPanel({ conversationId }: ChatPanelProps) {
   const router = useRouter();
-  const { supabase, user, canAccessSupportPanel } = useAuthUser();
+  const { supabase, user } = useAuthUser();
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
@@ -756,7 +753,9 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
     if (!supabase || !user || !conversation || blocking) return;
     if (conversation.conversation_type !== "customer_store" || !conversation.store_id || !conversation.customer_user_id) return;
 
-    const isCustomer = conversation.customer_user_id === user.id;
+    if (!conversation.viewer_role) return;
+
+    const isCustomer = conversation.viewer_role === "customer";
     const confirmed = window.confirm(
       isCustomer
         ? "Bu mağazanı bloklamaq istəyirsiniz? Bu mağazaya yeni mesaj yaza bilməyəcəksiniz."
@@ -891,12 +890,13 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
   const readOnlyMessage = readOnlyMessageForConversation(conversation);
   const listingUnavailableMessage =
     !readOnlyMessage && isCustomerStoreListingUnavailable(conversation) ? UNAVAILABLE_LISTING_MESSAGE : null;
-  const templateAudience = templateAudienceForConversation(conversation, user.id, canAccessSupportPanel);
+  const templateAudience = templateAudienceForConversation(conversation);
   const messageTemplates = templateAudience ? MESSAGE_TEMPLATES_BY_AUDIENCE[templateAudience] : [];
   const canBlockConversation =
     conversation.conversation_type === "customer_store" &&
-    Boolean(conversation.store_id && conversation.customer_user_id);
+    Boolean(conversation.store_id && conversation.customer_user_id && conversation.viewer_role);
   const canCloseConversation =
+    Boolean(conversation.viewer_role) &&
     conversation.conversation_type !== "legacy_user_user" &&
     conversation.status !== "closed" &&
     conversation.status !== "resolved";

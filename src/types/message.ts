@@ -36,6 +36,11 @@ export type Message = {
   metadata: Record<string, unknown>;
 };
 
+export type ConversationViewerRole =
+  | "customer"
+  | "store"
+  | "support";
+
 export type StoreApplicationStatus =
   | "submitted"
   | "under_review"
@@ -82,6 +87,7 @@ export type ConversationPreview = Conversation & {
   store_slug: string | null;
   store_logo_url: string | null;
   other_user_id: string | null;
+  viewer_role: ConversationViewerRole | null;
   last_message: string | null;
   last_message_at: string | null;
   unread_count: number;
@@ -100,6 +106,7 @@ export type ConversationDetail = Conversation & {
   store_slug: string | null;
   store_logo_url: string | null;
   other_user_id: string | null;
+  viewer_role: ConversationViewerRole | null;
   is_read_only: boolean;
   can_send: boolean;
 

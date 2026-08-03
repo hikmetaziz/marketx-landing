@@ -118,11 +118,10 @@ function storeApplicationStatusClass(status: string): string {
 
 function isStoreOwnerCustomerConversation(
   item: ConversationPreview,
-  viewerUserId: string,
 ): boolean {
   return (
     item.conversation_type === "customer_store" &&
-    item.customer_user_id !== viewerUserId
+    item.viewer_role === "store"
   );
 }
 
@@ -233,13 +232,11 @@ function cardTitle(item: ConversationPreview): string {
 
 function ConversationCard({
   item,
-  viewerUserId,
 }: {
   item: ConversationPreview;
-  viewerUserId: string;
 }) {
   const storeOwnerCustomerConversation =
-    isStoreOwnerCustomerConversation(item, viewerUserId);
+    isStoreOwnerCustomerConversation(item);
   const meta = cardMeta(item, storeOwnerCustomerConversation);
   const displayStatus = statusLabel(item.status, {
     storeOwnerCustomerConversation,
@@ -388,10 +385,8 @@ function StoreApplicationCard({ item }: { item: ConversationPreview }) {
 
 function ConversationList({
   items,
-  viewerUserId,
 }: {
   items: ConversationPreview[];
-  viewerUserId: string;
 }) {
   return (
     <div className="space-y-3">
@@ -399,7 +394,6 @@ function ConversationList({
         <ConversationCard
           key={item.id}
           item={item}
-          viewerUserId={viewerUserId}
         />
       ))}
     </div>
@@ -772,12 +766,10 @@ export function MessagesInboxPanel() {
         ) : activeTab === "store_messages" ? (
           <ConversationList
             items={storeMessages}
-            viewerUserId={user.id}
           />
         ) : activeTab === "support" ? (
           <ConversationList
             items={support}
-            viewerUserId={user.id}
           />
         ) : (
           <div className="space-y-3">

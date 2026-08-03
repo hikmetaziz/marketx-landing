@@ -11,6 +11,7 @@ import type {
   Conversation,
   ConversationDetail,
   ConversationPreview,
+  ConversationViewerRole,
   Message,
   StoreApplication,
 } from "@/types/message";
@@ -47,6 +48,11 @@ type AdminCustomerStoreConversationSummaryRow = Omit<AdminCustomerStoreConversat
 type ReadState = {
   last_read_at: string | null;
   archived_at: string | null;
+};
+
+type ViewerRoleRow = {
+  conversation_id: string;
+  viewer_role: string | null;
 };
 
 export type MessagingRealtimeStatus =
@@ -129,7 +135,35 @@ function conversationOpenError(error: unknown): string {
   return translateMessagingError(error, "open_conversation");
 }
 
-function mapConversation(row: ConversationRow, userId?: string): ConversationDetail {
+function isConversationViewerRole(value: unknown): value is ConversationViewerRole {
+  return value === "customer" || value === "store" || value === "support";
+}
+
+async function fetchViewerRoles(
+  supabase: SupabaseClient,
+  ids: string[],
+): Promise<Map<string, ConversationViewerRole>> {
+  const uniqueIds = [...new Set(ids)].filter(Boolean);
+  if (uniqueIds.length === 0) return new Map();
+
+  const { data, error } = await supabase.rpc("get_conversation_viewer_roles", {
+    p_conversation_ids: uniqueIds,
+  });
+
+  if (error) return new Map();
+
+  return new Map(
+    ((data ?? []) as ViewerRoleRow[])
+      .filter((row) => isConversationViewerRole(row.viewer_role))
+      .map((row) => [row.conversation_id, row.viewer_role as ConversationViewerRole]),
+  );
+}
+
+function mapConversation(
+  row: ConversationRow,
+  userId?: string,
+  viewerRole: ConversationViewerRole | null = null,
+): ConversationDetail {
   const listing = unwrapOne(row.listings);
   const store = unwrapOne(row.stores);
   const storeApplication = unwrapOne(row.store_application);
@@ -165,6 +199,7 @@ function mapConversation(row: ConversationRow, userId?: string): ConversationDet
     store_logo_url: store?.logo_url ?? null,
     other_user_id:
       userId && row.buyer_id === userId ? row.seller_id : userId && row.seller_id === userId ? row.buyer_id : null,
+    viewer_role: viewerRole,
     is_read_only: legacy,
     can_send: !legacy && row.status !== "closed" && row.status !== "resolved",
     store_application: storeApplication,
@@ -228,11 +263,15 @@ async function toPreviews(
   rows: ConversationRow[],
   userId?: string,
 ): Promise<ConversationPreview[]> {
-  const readState = await fetchReadState(supabase, rows.map((row) => row.id), userId);
+  const ids = rows.map((row) => row.id);
+  const [readState, viewerRoles] = await Promise.all([
+    fetchReadState(supabase, ids, userId),
+    fetchViewerRoles(supabase, ids),
+  ]);
   const previews: ConversationPreview[] = [];
 
   for (const row of rows) {
-    const mapped = mapConversation(row, userId);
+    const mapped = mapConversation(row, userId, viewerRoles.get(row.id) ?? null);
     const last = await fetchLastMessage(supabase, row.id);
     const state = readState.get(row.id) ?? { last_read_at: null, archived_at: null };
     if (isArchivedForCurrentActivity(state.archived_at, last.created_at ?? mapped.last_message_at ?? mapped.updated_at)) continue;
@@ -318,7 +357,9 @@ export async function fetchConversationDetail(
     return { data: null, error: error ? translateMessagingError(error, "load_messages") : "Söhbət tapılmadı." };
   }
 
-  return { data: mapConversation(data as ConversationRow, userId), error: null };
+  const viewerRoles = await fetchViewerRoles(supabase, [data.id]);
+
+  return { data: mapConversation(data as ConversationRow, userId, viewerRoles.get(data.id) ?? null), error: null };
 }
 
 export async function fetchMyConversations(

@@ -13,6 +13,7 @@ import {
   SUPPORT_ATTACHMENT_MAX_FILES,
   uploadSupportAttachments,
 } from "@/lib/messaging/support-attachments";
+import { mapMessagingError } from "@/lib/messaging/errors";
 import {
   classifyPaymentSafety,
   PAYMENT_BLOCK_TEXT,
@@ -154,36 +155,40 @@ export function StoreMessagingPanel({ storeId }: { storeId: string }) {
 
     setPending(true);
     setError("");
-    const result = await getOrCreateStoreSupportConversation(supabase, {
-      storeId,
-      topic,
-      subject: cleanSubject,
-    });
+    try {
+      const result = await getOrCreateStoreSupportConversation(supabase, {
+        storeId,
+        topic,
+        subject: cleanSubject,
+      });
 
-    if (result.error || !result.conversationId) {
+      if (result.error || !result.conversationId) {
+        setError(result.error ?? "Dəstək söhbəti açılmadı.");
+        return;
+      }
+
+      const uploadResult = files.length > 0 ? await uploadSupportAttachments(user.id, result.conversationId, files) : { urls: [], errors: [] };
+      const message = buildSupportInitialMessage({
+        topicLabel: STORE_TOPIC_LABELS[topic],
+        subject: cleanSubject,
+        details: cleanDetails,
+        attachmentUrls: uploadResult.urls,
+        uploadErrors: uploadResult.errors,
+      });
+
+      const messageResult = await sendConversationMessage(supabase, result.conversationId, message);
+
+      if (messageResult.error) {
+        setError(messageResult.error);
+        return;
+      }
+
+      router.push(`/account/messages/${result.conversationId}`);
+    } catch (error) {
+      setError(mapMessagingError(error, "send_message").message);
+    } finally {
       setPending(false);
-      setError(result.error ?? "Dəstək söhbəti açılmadı.");
-      return;
     }
-
-    const uploadResult = files.length > 0 ? await uploadSupportAttachments(user.id, result.conversationId, files) : { urls: [], errors: [] };
-    const message = buildSupportInitialMessage({
-      topicLabel: STORE_TOPIC_LABELS[topic],
-      subject: cleanSubject,
-      details: cleanDetails,
-      attachmentUrls: uploadResult.urls,
-      uploadErrors: uploadResult.errors,
-    });
-
-    const messageResult = await sendConversationMessage(supabase, result.conversationId, message);
-
-    setPending(false);
-    if (messageResult.error) {
-      setError(messageResult.error);
-      return;
-    }
-
-    router.push(`/account/messages/${result.conversationId}`);
   };
 
   const customerMessages = items.filter((item) => item.conversation_type === "customer_store");

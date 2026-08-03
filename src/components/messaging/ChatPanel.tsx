@@ -740,13 +740,18 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
     setArchiving(true);
     setErrorMessage("");
-    const result = await archiveConversationForCurrentUser(supabase, conversationId);
-    setArchiving(false);
-    if (result.error) {
-      setErrorMessage(result.error);
-      return;
+    try {
+      const result = await archiveConversationForCurrentUser(supabase, conversationId);
+      if (result.error) {
+        setErrorMessage(result.error);
+        return;
+      }
+      router.push("/account/messages");
+    } catch (error) {
+      setErrorMessage(mapMessagingError(error, "archive_conversation").message);
+    } finally {
+      setArchiving(false);
     }
-    router.push("/account/messages");
   };
 
   const handleBlock = async () => {
@@ -765,17 +770,22 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
     setBlocking(true);
     setErrorMessage("");
-    const blockResult = await blockCustomerStoreConversation(supabase, {
-      conversationId,
-      reason: isCustomer ? "customer_blocked_store" : "store_or_support_blocked_customer",
-    });
-    setBlocking(false);
-    if (blockResult.error) {
-      setErrorMessage(blockResult.error);
-      return;
-    }
+    try {
+      const blockResult = await blockCustomerStoreConversation(supabase, {
+        conversationId,
+        reason: isCustomer ? "customer_blocked_store" : "store_or_support_blocked_customer",
+      });
+      if (blockResult.error) {
+        setErrorMessage(blockResult.error);
+        return;
+      }
 
-    router.push("/account/messages");
+      router.push("/account/messages");
+    } catch (error) {
+      setErrorMessage(mapMessagingError(error, "block_conversation").message);
+    } finally {
+      setBlocking(false);
+    }
   };
 
   const handleClose = async () => {
@@ -787,24 +797,29 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
     setClosing(true);
     setErrorMessage("");
-    const result = await closeConversation(supabase, conversationId);
-    setClosing(false);
-    if (result.error) {
-      setErrorMessage(result.error);
-      return;
-    }
+    try {
+      const result = await closeConversation(supabase, conversationId);
+      if (result.error) {
+        setErrorMessage(result.error);
+        return;
+      }
 
-    setConversation((current) =>
-      current
-        ? {
-            ...current,
-            status: "closed",
-            closed_at: new Date().toISOString(),
-            can_send: false,
-            is_read_only: current.is_read_only || current.conversation_type === "legacy_user_user",
-          }
-        : current,
-    );
+      setConversation((current) =>
+        current
+          ? {
+              ...current,
+              status: "closed",
+              closed_at: new Date().toISOString(),
+              can_send: false,
+              is_read_only: current.is_read_only || current.conversation_type === "legacy_user_user",
+            }
+          : current,
+      );
+    } catch (error) {
+      setErrorMessage(mapMessagingError(error, "close_conversation").message);
+    } finally {
+      setClosing(false);
+    }
   };
 
   const startEditMessage = (message: Message) => {
@@ -835,15 +850,20 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
     setMessageActionId(message.id);
     setErrorMessage("");
-    const result = await editConversationMessage(supabase, { messageId: message.id, body: validation.body });
-    setMessageActionId("");
-    if (result.error || !result.data) {
-      setErrorMessage(result.error ?? "Mesaj dəyişdirilmədi.");
-      return;
-    }
+    try {
+      const result = await editConversationMessage(supabase, { messageId: message.id, body: validation.body });
+      if (result.error || !result.data) {
+        setErrorMessage(result.error ?? "Mesaj dəyişdirilmədi.");
+        return;
+      }
 
-    replaceMessage(result.data);
-    cancelEditMessage();
+      replaceMessage(result.data);
+      cancelEditMessage();
+    } catch (error) {
+      setErrorMessage(mapMessagingError(error, "edit_message").message);
+    } finally {
+      setMessageActionId("");
+    }
   };
 
   const handleDeleteMessage = async (message: Message) => {
@@ -853,15 +873,20 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
     setMessageActionId(message.id);
     setErrorMessage("");
-    const result = await deleteConversationMessageText(supabase, message.id);
-    setMessageActionId("");
-    if (result.error || !result.data) {
-      setErrorMessage(result.error ?? "Mesaj silinmədi.");
-      return;
-    }
+    try {
+      const result = await deleteConversationMessageText(supabase, message.id);
+      if (result.error || !result.data) {
+        setErrorMessage(result.error ?? "Mesaj silinmədi.");
+        return;
+      }
 
-    replaceMessage(result.data);
-    if (editingMessageId === message.id) cancelEditMessage();
+      replaceMessage(result.data);
+      if (editingMessageId === message.id) cancelEditMessage();
+    } catch (error) {
+      setErrorMessage(mapMessagingError(error, "delete_message").message);
+    } finally {
+      setMessageActionId("");
+    }
   };
 
   if (!isSupabaseConfigured()) {

@@ -3,6 +3,7 @@
 import { Loader2, Search } from "lucide-react";
 import Link from "next/link";
 import {
+  type KeyboardEvent,
   useCallback,
   useEffect,
   useMemo,
@@ -140,6 +141,20 @@ function CountCard({
 type NewStoreRequestFields = ParsedStoreApplication;
 
 type SupportTab = "support" | "store_applications";
+
+const SUPPORT_TABS: readonly {
+  value: SupportTab;
+  label: string;
+}[] = [
+  {
+    value: "support",
+    label: "Dəstək mesajları",
+  },
+  {
+    value: "store_applications",
+    label: "Mağaza müraciətləri",
+  },
+];
 
 type CreatedStore = {
   name: string;
@@ -366,6 +381,7 @@ export function AdminSupportPanel() {
     useState<string | null>(null);
 
   const loadingRef = useRef(false);
+  const supportTabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const load = useCallback(
     async (silent = false) => {
@@ -1164,6 +1180,55 @@ export function AdminSupportPanel() {
     }
   };
 
+  const activateSupportTabAt = (
+    index: number,
+  ) => {
+    const tab = SUPPORT_TABS[index];
+    if (!tab) {
+      return;
+    }
+
+    handleTabChange(tab.value);
+    window.requestAnimationFrame(() => {
+      supportTabRefs.current[index]?.focus();
+    });
+  };
+
+  const handleSupportTabKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      activateSupportTabAt(
+        (index + 1) % SUPPORT_TABS.length,
+      );
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      activateSupportTabAt(
+        (index - 1 + SUPPORT_TABS.length) %
+          SUPPORT_TABS.length,
+      );
+      return;
+    }
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      activateSupportTabAt(0);
+      return;
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      activateSupportTabAt(
+        SUPPORT_TABS.length - 1,
+      );
+    }
+  };
+
   const statusOptions = useMemo(() => {
     const statuses = Array.from(
       new Set(
@@ -1236,12 +1301,28 @@ export function AdminSupportPanel() {
         />
       </section>
 
-      <div className="flex flex-wrap gap-2 rounded-xl border border-brand-border/80 bg-white p-2">
+      <div
+        role="tablist"
+        aria-label="Admin dəstək bölmələri"
+        className="flex flex-wrap gap-2 rounded-xl border border-brand-border/80 bg-white p-2"
+      >
         <button
           type="button"
+          id="admin-support-tab-support"
+          role="tab"
+          aria-selected={activeTab === "support"}
+          aria-controls="admin-support-panel-support"
+          tabIndex={activeTab === "support" ? 0 : -1}
           onClick={() =>
             handleTabChange("support")
           }
+          onKeyDown={(event) =>
+            handleSupportTabKeyDown(event, 0)
+          }
+          ref={(element) => {
+            supportTabRefs.current[0] =
+              element;
+          }}
           className={`rounded-lg px-4 py-2 text-sm font-bold transition-colors ${
             activeTab === "support"
               ? "bg-brand-primary text-white"
@@ -1253,11 +1334,31 @@ export function AdminSupportPanel() {
 
         <button
           type="button"
+          id="admin-support-tab-store_applications"
+          role="tab"
+          aria-selected={
+            activeTab ===
+            "store_applications"
+          }
+          aria-controls="admin-support-panel-store_applications"
+          tabIndex={
+            activeTab ===
+            "store_applications"
+              ? 0
+              : -1
+          }
           onClick={() =>
             handleTabChange(
               "store_applications",
             )
           }
+          onKeyDown={(event) =>
+            handleSupportTabKeyDown(event, 1)
+          }
+          ref={(element) => {
+            supportTabRefs.current[1] =
+              element;
+          }}
           className={`rounded-lg px-4 py-2 text-sm font-bold transition-colors ${
             activeTab ===
             "store_applications"
@@ -1330,7 +1431,12 @@ export function AdminSupportPanel() {
         ) : null}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[380px_1fr]">
+      <div
+        id={`admin-support-panel-${activeTab}`}
+        role="tabpanel"
+        aria-labelledby={`admin-support-tab-${activeTab}`}
+        className="grid gap-4 lg:grid-cols-[380px_1fr]"
+      >
         <section className="max-h-[calc(100vh-340px)] overflow-y-auto rounded-xl border border-brand-border/80 bg-white p-3">
           {filteredRows.length === 0 ? (
             <p className="py-6 text-center text-sm text-brand-muted">

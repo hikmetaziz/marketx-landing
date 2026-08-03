@@ -3,6 +3,7 @@
 import { Loader2, Store } from "lucide-react";
 import Link from "next/link";
 import {
+  type KeyboardEvent,
   useCallback,
   useEffect,
   useRef,
@@ -434,6 +435,45 @@ function InboxTabs({
       count: applicationsUnreadCount,
     },
   ];
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  const activateTabAt = (index: number) => {
+    const tab = tabs[index];
+    if (!tab) return;
+
+    onChange(tab.value);
+    window.requestAnimationFrame(() => {
+      tabRefs.current[index]?.focus();
+    });
+  };
+
+  const handleTabKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    index: number,
+  ) => {
+    if (event.key === "ArrowRight") {
+      event.preventDefault();
+      activateTabAt((index + 1) % tabs.length);
+      return;
+    }
+
+    if (event.key === "ArrowLeft") {
+      event.preventDefault();
+      activateTabAt((index - 1 + tabs.length) % tabs.length);
+      return;
+    }
+
+    if (event.key === "Home") {
+      event.preventDefault();
+      activateTabAt(0);
+      return;
+    }
+
+    if (event.key === "End") {
+      event.preventDefault();
+      activateTabAt(tabs.length - 1);
+    }
+  };
 
   return (
     <div
@@ -441,7 +481,7 @@ function InboxTabs({
       aria-label="Mesaj kateqoriyaları"
       className="flex gap-1 overflow-x-auto border-b border-brand-border/80"
     >
-      {tabs.map((tab) => {
+      {tabs.map((tab, index) => {
         const isActive = active === tab.value;
 
         return (
@@ -454,6 +494,10 @@ function InboxTabs({
             aria-controls={`messages-panel-${tab.value}`}
             tabIndex={isActive ? 0 : -1}
             onClick={() => onChange(tab.value)}
+            onKeyDown={(event) => handleTabKeyDown(event, index)}
+            ref={(element) => {
+              tabRefs.current[index] = element;
+            }}
             className={`relative flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap px-4 py-2.5 text-sm font-bold transition-colors ${
               isActive
                 ? "text-brand-primary"

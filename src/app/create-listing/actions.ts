@@ -25,6 +25,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   canCreateListingForStore,
   LISTING_CREATION_PERMISSION_MESSAGE,
+  LISTING_CREATION_STORE_PERMISSION_MESSAGE,
 } from "@/lib/stores/membership";
 
 export type CreateListingResult =
@@ -61,7 +62,7 @@ export async function createListing(
   const supabase = await createClient();
   const hasStoreAccess = await canCreateListingForStore(supabase, targetStoreId, user.id);
   if (!hasStoreAccess) {
-    return { ok: false, error: LISTING_CREATION_PERMISSION_MESSAGE };
+    return { ok: false, error: LISTING_CREATION_STORE_PERMISSION_MESSAGE };
   }
 
   const captcha = await verifyTurnstileToken(captchaToken);

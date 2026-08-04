@@ -6,8 +6,17 @@ const CLAIMED_STORE_STATUS = "claimed";
 export const LISTING_CREATION_PERMISSION_MESSAGE =
   "Elan yerləşdirmək üçün mağaza girişiniz admin tərəfindən aktivləşdirilməlidir.";
 
+export const LISTING_CREATION_STORE_PERMISSION_MESSAGE =
+  "Bu mağaza adından elan yerləşdirmək icazəniz yoxdur.";
+
+export type ListingCreationStoreOption = {
+  storeId: string;
+  storeName: string | null;
+  storeCode: string | null;
+};
+
 export type ListingCreationStoreAccess =
-  | { ok: true; storeId: string; storeName: string | null }
+  | { ok: true; stores: ListingCreationStoreOption[] }
   | { ok: false; error: string };
 
 export async function isActiveStoreMember(
@@ -72,28 +81,52 @@ export async function getListingCreationStoreAccess(
   supabase: SupabaseClient,
   userId: string,
 ): Promise<ListingCreationStoreAccess> {
-  const { data, error } = await supabase
+  const { data: memberships, error } = await supabase
     .from("store_members")
     .select("store_id, role")
     .eq("user_id", userId)
-    .in("role", [...ACTIVE_STORE_MEMBER_ROLES])
-    .limit(1)
-    .maybeSingle();
+    .in("role", [...ACTIVE_STORE_MEMBER_ROLES]);
 
   if (error) {
     console.warn("Listing creation membership lookup failed:", error.message);
     return { ok: false, error: LISTING_CREATION_PERMISSION_MESSAGE };
   }
 
-  const storeId = typeof data?.store_id === "string" ? data.store_id : "";
-  if (!storeId) {
+  const storeIds = [
+    ...new Set(
+      (memberships ?? [])
+        .map((membership) => membership.store_id)
+        .filter((storeId): storeId is string => typeof storeId === "string" && storeId.length > 0),
+    ),
+  ];
+
+  if (storeIds.length === 0) {
     return { ok: false, error: LISTING_CREATION_PERMISSION_MESSAGE };
   }
 
-  const store = await getClaimedStore(supabase, storeId);
-  if (!store) {
+  const { data: stores, error: storesError } = await supabase
+    .from("stores")
+    .select("id, name, store_code, status")
+    .in("id", storeIds)
+    .eq("status", CLAIMED_STORE_STATUS)
+    .order("name", { ascending: true });
+
+  if (storesError) {
+    console.warn("Listing creation store lookup failed:", storesError.message);
     return { ok: false, error: LISTING_CREATION_PERMISSION_MESSAGE };
   }
 
-  return { ok: true, storeId: store.id, storeName: store.name };
+  const eligibleStores = (stores ?? [])
+    .map((store) => ({
+      storeId: String(store.id),
+      storeName: typeof store.name === "string" ? store.name : null,
+      storeCode: typeof store.store_code === "string" ? store.store_code : null,
+    }))
+    .filter((store) => store.storeId.length > 0);
+
+  if (eligibleStores.length === 0) {
+    return { ok: false, error: LISTING_CREATION_PERMISSION_MESSAGE };
+  }
+
+  return { ok: true, stores: eligibleStores };
 }

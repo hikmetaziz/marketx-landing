@@ -21,6 +21,7 @@ import {
 } from "@/lib/listings/upload";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useAuthUser } from "@/lib/supabase/use-auth-user";
+import type { ListingCreationStoreOption } from "@/lib/stores/membership";
 import type { CategorySchemaSnapshot } from "@/lib/category-schema/schema-contract";
 import {
   getCategorySchemaSelection,
@@ -48,13 +49,18 @@ type CreateListingFormProps = {
   taxonomy: ListingTaxonomy;
   categorySchemaSnapshot: CategorySchemaSnapshot;
   storeAccess: {
-    storeId: string;
-    storeName: string | null;
+    stores: ListingCreationStoreOption[];
   };
 };
 
 const selectClass =
   "w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-3 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15";
+
+const STORE_SELECTION_REQUIRED_MESSAGE = "Elanı yerləşdirəcəyiniz mağazanı seçin.";
+
+function formatStoreLabel(store: ListingCreationStoreOption): string {
+  return [store.storeName ?? "Mağaza", store.storeCode].filter(Boolean).join(" · ");
+}
 
 function getUploadStageLabel(stage: UploadProgressItem["stage"]) {
   if (stage === "compressing") return "Sıxılır";
@@ -73,9 +79,12 @@ function formatFileSize(bytes?: number) {
 export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAccess }: CreateListingFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { supabase, user, loading: authLoading } = useAuthUser();
+  const eligibleStores = storeAccess.stores;
+  const defaultSelectedStoreId = eligibleStores.length === 1 ? eligibleStores[0]?.storeId ?? "" : "";
 
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState("");
+  const [selectedStoreId, setSelectedStoreId] = useState(defaultSelectedStoreId);
   const [categoryId, setCategoryId] = useState("");
   const [subcategoryId, setSubcategoryId] = useState("");
   const [attributes, setAttributes] = useState<ListingAttributeValues>({});
@@ -92,6 +101,11 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
   const [successMessage, setSuccessMessage] = useState("");
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const turnstileEnabled = isTurnstileConfigured();
+
+  const selectedStore = useMemo(
+    () => eligibleStores.find((store) => store.storeId === selectedStoreId) ?? null,
+    [eligibleStores, selectedStoreId],
+  );
 
   const selectedCategory = useMemo(
     () => taxonomy.categories.find((item) => item.id === categoryId) ?? null,
@@ -157,6 +171,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
     images.forEach((img) => URL.revokeObjectURL(img.url));
     setTitle("");
     setPrice("");
+    setSelectedStoreId(defaultSelectedStoreId);
     setCategoryId("");
     setSubcategoryId("");
     setAttributes({});
@@ -226,6 +241,11 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
     setSuccessMessage("");
     setUploadProgressItems([]);
 
+    if (!selectedStoreId || !selectedStore) {
+      setErrorMessage(STORE_SELECTION_REQUIRED_MESSAGE);
+      return;
+    }
+
     if (!title.trim() || !price || !categoryId || !city) {
       setErrorMessage("Başlıq, qiymət, kateqoriya və şəhər mütləq doldurulmalıdır.");
       return;
@@ -291,7 +311,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
       {
         title,
         price: priceNumber,
-        storeId: storeAccess.storeId,
+        storeId: selectedStoreId,
         categoryId,
         subcategoryId: subcategoryId || null,
         attributes,
@@ -470,9 +490,32 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
         </button>
       </div>
 
-      <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
-        Elan bu mağaza üçün yaradılır: {storeAccess.storeName ?? "Mağaza"}
-      </div>
+      <section className="card-premium space-y-3 rounded-2xl p-5 hover:translate-y-0">
+        <label htmlFor="listing-store-id" className="block text-sm font-semibold text-brand-text">
+          Elanı hansı mağazadan yerləşdirirsiniz?
+        </label>
+
+        {eligibleStores.length === 1 && selectedStore ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800">
+            {formatStoreLabel(selectedStore)}
+          </div>
+        ) : (
+          <select
+            id="listing-store-id"
+            value={selectedStoreId}
+            onChange={(event) => setSelectedStoreId(event.target.value)}
+            className={selectClass}
+            required
+          >
+            <option value="">Mağazanı seçin</option>
+            {eligibleStores.map((store) => (
+              <option key={store.storeId} value={store.storeId}>
+                {formatStoreLabel(store)}
+              </option>
+            ))}
+          </select>
+        )}
+      </section>
 
       {errorMessage ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">

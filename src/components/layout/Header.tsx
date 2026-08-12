@@ -1,6 +1,6 @@
 "use client";
 
-import { LayoutGrid, UserCircle } from "lucide-react";
+import { LayoutGrid, MessageCircle, UserCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -8,6 +8,7 @@ import { useState } from "react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { HeaderAuthActions } from "@/components/auth/HeaderAuthActions";
 import { MAIN_NAV } from "@/constants/data";
+import { useAuthUser } from "@/lib/supabase/use-auth-user";
 
 const HOME_NAV = [
   { href: "/", label: "Ana səhifə" },
@@ -49,13 +50,19 @@ function mobileNavLinkClass(active: boolean, homepage: boolean): string {
 export function Header() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { isAuthenticated, loading: authLoading } = useAuthUser();
   const isHomepage = pathname === "/";
   const navLinks = isHomepage ? HOME_NAV : MAIN_NAV;
+  const messagesHref =
+    !authLoading && !isAuthenticated
+      ? "/login?returnTo=/account/messages"
+      : "/account/messages";
+  const profileHref = !authLoading && !isAuthenticated ? "/login" : "/account";
 
   return (
     <>
       <header className="marktx-mobile-header sticky top-0 z-50 border-b border-brand-border/70 bg-white/95 shadow-[0_2px_14px_rgb(15_23_42/0.04)] backdrop-blur-lg md:hidden">
-        <div className="mx-auto grid h-14 grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2 px-3">
+        <div className="mx-auto grid h-14 grid-cols-[88px_minmax(0,1fr)_88px] items-center gap-2 px-3">
           <button
             type="button"
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-brand-border bg-white text-brand-text"
@@ -71,13 +78,22 @@ export function Header() {
             <BrandLogo className="text-[22px] leading-none" />
           </div>
 
-          <Link
-            href="/account"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-brand-border bg-white text-brand-text"
-            aria-label="Profil"
-          >
-            <UserCircle className="h-5 w-5" aria-hidden="true" />
-          </Link>
+          <div className="flex items-center justify-end gap-1">
+            <Link
+              href={profileHref}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-brand-border bg-white text-brand-text"
+              aria-label="Profil"
+            >
+              <UserCircle className="h-5 w-5" aria-hidden="true" />
+            </Link>
+            <Link
+              href={messagesHref}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-lg border border-brand-border bg-white text-brand-text"
+              aria-label="Mesajlar"
+            >
+              <MessageCircle className="h-5 w-5" aria-hidden="true" />
+            </Link>
+          </div>
         </div>
 
         {open ? (

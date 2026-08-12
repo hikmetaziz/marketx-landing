@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart, Home, LayoutGrid, Plus, UserCircle, type LucideIcon } from "lucide-react";
+import { Heart, Home, LayoutGrid, Plus, Store, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -9,7 +9,7 @@ type MobileNavItem = {
   label: string;
   ariaLabel: string;
   icon: LucideIcon;
-  key: "home" | "listings" | "create" | "favorites" | "profile";
+  key: "home" | "listings" | "create" | "favorites" | "stores";
 };
 
 const MOBILE_NAV_ITEMS: MobileNavItem[] = [
@@ -42,11 +42,11 @@ const MOBILE_NAV_ITEMS: MobileNavItem[] = [
     key: "favorites",
   },
   {
-    href: "/account",
-    label: "Profil",
-    ariaLabel: "Profilə keç",
-    icon: UserCircle,
-    key: "profile",
+    href: "/stores",
+    label: "Mağazalar",
+    ariaLabel: "Mağazalara keç",
+    icon: Store,
+    key: "stores",
   },
 ];
 

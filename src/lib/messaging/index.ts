@@ -32,6 +32,8 @@ type StoreInfo = {
   logo_url: string | null;
 };
 
+const WEB_PUSH_TRIGGERED_MESSAGE_IDS = new Set<string>();
+
 type ConversationRow = Conversation & {
   listings: ListingInfo | ListingInfo[] | null;
   stores: StoreInfo | StoreInfo[] | null;
@@ -118,6 +120,9 @@ const CONVERSATION_SELECT = `
     updated_at
   )
 `;
+
+const MESSAGE_SELECT = "id, conversation_id, sender_id, sender_context, body, created_at, metadata";
+export const MESSAGE_HISTORY_PAGE_SIZE = 50;
 
 function unwrapOne<T>(value: T | T[] | null): T | null {
   if (!value) return null;
@@ -476,16 +481,28 @@ export async function auditStoreSupportConversationAccess(
 export async function fetchMessages(
   supabase: SupabaseClient,
   conversationId: string,
+  options: { limit?: number } = {},
 ): Promise<{ data: Message[]; error: string | null }> {
+  const limit = Math.max(1, Math.round(options.limit ?? MESSAGE_HISTORY_PAGE_SIZE));
   const { data, error } = await supabase
     .from("messages")
-    .select("id, conversation_id, sender_id, sender_context, body, created_at, metadata")
+    .select(MESSAGE_SELECT)
     .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true })
-    .order("id", { ascending: true });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(limit);
 
   if (error) return { data: [], error: translateMessagingError(error, "load_messages") };
-  return { data: ((data as Message[]) ?? []).map((row) => ({ ...row, metadata: row.metadata ?? {} })), error: null };
+  return {
+    data: ((data as Message[]) ?? [])
+      .map((row) => ({ ...row, metadata: row.metadata ?? {} }))
+      .sort(
+        (left, right) =>
+          left.created_at.localeCompare(right.created_at) ||
+          left.id.localeCompare(right.id),
+      ),
+    error: null,
+  };
 }
 
 export function mergeMessages(
@@ -507,13 +524,38 @@ export function mergeMessages(
   );
 }
 
+export function filterMessagesAfterArchiveBoundary(messages: Message[], archivedAt: string | null): Message[] {
+  if (!archivedAt) return messages;
+
+  const archiveTime = new Date(archivedAt).getTime();
+  if (Number.isNaN(archiveTime)) return messages;
+
+  return messages.filter((message) => new Date(message.created_at).getTime() > archiveTime);
+}
+
+export async function fetchConversationArchiveBoundary(
+  supabase: SupabaseClient,
+  conversationId: string,
+): Promise<{ archivedAt: string | null; error: string | null }> {
+  const { data, error } = await supabase
+    .from("conversation_reads")
+    .select("archived_at")
+    .eq("conversation_id", conversationId)
+    .limit(1);
+
+  if (error) return { archivedAt: null, error: translateMessagingError(error, "load_messages") };
+
+  const row = (data ?? [])[0] as { archived_at: string | null } | undefined;
+  return { archivedAt: row?.archived_at ?? null, error: null };
+}
+
 export async function fetchFirstConversationMessage(
   supabase: SupabaseClient,
   conversationId: string,
 ): Promise<{ data: Message | null; error: string | null }> {
   const { data, error } = await supabase
     .from("messages")
-    .select("id, conversation_id, sender_id, sender_context, body, created_at, metadata")
+    .select(MESSAGE_SELECT)
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true })
     .order("id", { ascending: true })
@@ -543,7 +585,7 @@ export async function fetchMessagesAfter(
 ): Promise<{ data: Message[]; error: string | null }> {
   const { data, error } = await supabase
     .from("messages")
-    .select("id, conversation_id, sender_id, sender_context, body, created_at, metadata")
+    .select(MESSAGE_SELECT)
     .eq("conversation_id", conversationId)
     .gte("created_at", after.created_at)
     .order("created_at", { ascending: true })
@@ -559,6 +601,45 @@ export async function fetchMessagesAfter(
     });
 
   return { data: messages, error: null };
+}
+
+export async function fetchMessagesBefore(
+  supabase: SupabaseClient,
+  conversationId: string,
+  before: Pick<Message, "created_at" | "id">,
+  options: { limit?: number; archivedAt?: string | null } = {},
+): Promise<{ data: Message[]; error: string | null; hasMore: boolean }> {
+  const limit = Math.max(1, Math.round(options.limit ?? MESSAGE_HISTORY_PAGE_SIZE));
+  let query = supabase
+    .from("messages")
+    .select(MESSAGE_SELECT)
+    .eq("conversation_id", conversationId)
+    .or(`created_at.lt.${before.created_at},and(created_at.eq.${before.created_at},id.lt.${before.id})`);
+
+  if (options.archivedAt) {
+    query = query.gt("created_at", options.archivedAt);
+  }
+
+  const { data, error } = await query
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .limit(limit + 1);
+
+  if (error) {
+    return { data: [], error: translateMessagingError(error, "load_messages"), hasMore: false };
+  }
+
+  const normalized = ((data as Message[]) ?? [])
+    .map((row) => ({ ...row, metadata: row.metadata ?? {} }))
+    .sort(
+      (left, right) =>
+        left.created_at.localeCompare(right.created_at) ||
+        left.id.localeCompare(right.id),
+    );
+  const hasMore = normalized.length > limit;
+  const messages = hasMore ? normalized.slice(normalized.length - limit) : normalized;
+
+  return { data: messages, error: null, hasMore };
 }
 
 export async function sendConversationMessage(
@@ -580,7 +661,40 @@ export async function sendConversationMessage(
   }
 
   const message = data as Message;
-  return { data: { ...message, metadata: message.metadata ?? {} }, error: null };
+  const normalizedMessage = { ...message, metadata: message.metadata ?? {} };
+
+  triggerWebMessagePush(supabase, normalizedMessage.id);
+
+  return { data: normalizedMessage, error: null };
+}
+
+function triggerWebMessagePush(supabase: SupabaseClient, messageId: string): void {
+  if (WEB_PUSH_TRIGGERED_MESSAGE_IDS.has(messageId)) {
+    return;
+  }
+
+  WEB_PUSH_TRIGGERED_MESSAGE_IDS.add(messageId);
+
+  void supabase.functions
+    .invoke("send-web-push", {
+      body: { message_id: messageId },
+    })
+    .then(({ error }) => {
+      if (error && process.env.NODE_ENV !== "production") {
+        console.warn("Web message push failed", {
+          messageId,
+          message: error.message,
+        });
+      }
+    })
+    .catch((error) => {
+      if (process.env.NODE_ENV !== "production") {
+        console.warn("Web message push failed", {
+          messageId,
+          error,
+        });
+      }
+    });
 }
 
 export async function editConversationMessage(

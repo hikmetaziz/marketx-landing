@@ -43,12 +43,6 @@ export default async function StorePage({
     .in("role", ["owner", "manager", "staff"])
     .order("created_at", { ascending: false });
 
-  console.log("STORE PAGE DEBUG", {
-    authUserId: user.id,
-    memberships,
-    membershipsError,
-  });
-
   if (membershipsError) {
     throw new Error("Mağaza girişləri yüklənmədi.");
   }
@@ -83,14 +77,6 @@ export default async function StorePage({
       .order("created_at", { ascending: false }),
   ]);
 
-  console.log("STORE RESULTS DEBUG", {
-    membershipStoreIds,
-    memberStores: memberStoresResult.data,
-    memberStoresError: memberStoresResult.error,
-    ownedStores: ownedStoresResult.data,
-    ownedStoresError: ownedStoresResult.error,
-  });
-
   if (memberStoresResult.error || ownedStoresResult.error) {
     throw new Error("Mağazalar yüklənmədi.");
   }
@@ -114,13 +100,13 @@ export default async function StorePage({
         title="Mağaza paneli"
         subtitle="Hesabınıza bağlı aktiv mağaza tapılmadı."
       >
-        <div className="rounded-2xl border border-brand-border bg-white p-6 text-center shadow-sm">
+        <div className="rounded-xl border border-brand-border bg-white p-4 text-center shadow-sm md:rounded-2xl md:p-6">
           <p className="text-sm leading-relaxed text-brand-muted">
             Mövcud mağazanı aktivasiya kodu ilə hesabınıza bağlaya və ya yeni
             mağaza üçün müraciət göndərə bilərsiniz.
           </p>
 
-          <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+          <div className="mt-5 flex flex-col justify-center gap-3 md:flex-row">
             <Link
               href="/account/store/claim"
               className="inline-flex items-center justify-center rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-primary-dark"
@@ -157,8 +143,8 @@ export default async function StorePage({
           : "Mağaza məlumatlarınızı idarə edin."
       }
     >
-      <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-brand-border bg-white p-5 shadow-sm">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="mb-5 flex flex-col gap-3 rounded-xl border border-brand-border bg-white p-4 shadow-sm md:mb-6 md:gap-4 md:rounded-2xl md:p-5">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <p className="text-sm font-semibold text-brand-text">
               {stores.length > 1 ? "Mağazalarım" : "Aktiv mağaza"}
@@ -186,7 +172,10 @@ export default async function StorePage({
         </div>
 
         {stores.length > 1 ? (
-          <nav className="flex gap-2 overflow-x-auto pb-1" aria-label="Mağazalar">
+          <nav
+            className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            aria-label="Mağazalar"
+          >
             {stores.map((store) => {
               const isActive = store.id === selectedStore.id;
 
@@ -194,7 +183,7 @@ export default async function StorePage({
                 <Link
                   key={store.id}
                   href={`/account/store?store=${encodeURIComponent(store.id)}`}
-                  className={`shrink-0 rounded-xl border px-4 py-2.5 text-left transition-colors ${
+                  className={`shrink-0 rounded-xl border px-3 py-2 text-left transition-colors md:px-4 md:py-2.5 ${
                     isActive
                       ? "border-brand-primary bg-brand-primary-light/40 text-brand-primary-dark"
                       : "border-brand-border bg-white text-brand-text hover:border-brand-primary/40"

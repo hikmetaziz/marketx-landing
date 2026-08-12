@@ -4,20 +4,20 @@ import { AZERBAIJAN_CITY_OPTIONS, CITY_FILTER_ALL_OPTION } from "@/lib/constants
 import { getListingSearchCategoryOptions } from "@/lib/listings/search";
 
 const glassField =
-  "h-12 min-w-0 w-full rounded-lg border border-[#d9e0e9] bg-white px-3.5 text-[15px] text-[#0b1f3a] outline-none transition-colors placeholder:text-brand-muted/70 hover:border-[#aebbc9] focus:border-[#173b69] focus:ring-2 focus:ring-[#173b69]/10";
+  "h-11 min-w-0 w-full rounded-lg border border-[#d9e0e9] bg-white px-3.5 text-sm text-[#0b1f3a] outline-none transition-colors placeholder:text-brand-muted/70 hover:border-[#aebbc9] focus:border-[#173b69] focus:ring-2 focus:ring-[#173b69]/10 md:h-12 md:text-[15px]";
 
 export async function SearchBarSection() {
   const categoryOptions = await getListingSearchCategoryOptions();
 
   return (
-    <section className="relative z-20 pb-11 pt-7 sm:pb-12" aria-labelledby="search-heading">
+    <section className="relative z-20 pb-7 pt-3 md:pb-12 md:pt-7" aria-labelledby="search-heading">
       <div className="mx-auto max-w-[1180px] px-4 sm:px-6 lg:px-0">
         <form
           action="/elanlar"
           method="get"
-          className="rounded-lg border border-[#d9e0e9] bg-white p-4 shadow-[0_16px_40px_rgba(15,23,42,0.10)] sm:p-5"
+          className="rounded-lg border border-[#d9e0e9] bg-white p-3.5 shadow-[0_12px_30px_rgba(15,23,42,0.09)] md:p-5 md:shadow-[0_16px_40px_rgba(15,23,42,0.10)]"
         >
-          <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="mb-2.5 flex items-center justify-between gap-3 md:mb-3">
             <h2 id="search-heading" className="text-base font-bold text-brand-text sm:text-lg">
               Elanlarda axtar
             </h2>
@@ -57,7 +57,7 @@ export async function SearchBarSection() {
 
             <button
               type="submit"
-              className="inline-flex h-12 items-center justify-center gap-2 rounded-lg bg-brand-primary px-7 text-[15px] font-bold text-white transition-colors hover:bg-brand-primary-dark lg:min-w-[120px]"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-brand-primary px-5 text-sm font-bold text-white transition-colors hover:bg-brand-primary-dark md:h-12 md:px-7 md:text-[15px] lg:min-w-[120px]"
             >
               <Search className="h-[18px] w-[18px]" />
               Axtar

@@ -4,10 +4,6 @@ import { createClient } from "@/lib/supabase/server";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { applyCategoryFilterToQuery, resolveCategoryFilter } from "@/lib/taxonomy/category-filter";
 import {
-  filterListingsWithReachableImages,
-  listingHasReachableImage,
-} from "@/lib/listings/image-reachability";
-import {
   formatListingDate,
   formatListingPrice,
   formatListingRelativeDate,
@@ -184,7 +180,7 @@ async function toPublicListings(data: ListingRow[] | null): Promise<LiveListing[
     return [];
   }
 
-  return filterListingsWithReachableImages(mapPublicRows(data));
+  return mapPublicRows(data);
 }
 
 async function getSupabaseClient() {
@@ -431,10 +427,6 @@ export const getListingByIdOrSlug = cache(async (idOrSlug: string): Promise<Live
     return null;
   }
 
-  if (!(await listingHasReachableImage(listing))) {
-    return null;
-  }
-
   return listing;
 });
 
@@ -460,7 +452,7 @@ export const getListingForSeoByIdOrSlug = cache(async (idOrSlug: string): Promis
   }
 
   const seo = mapSeoRow(data as ListingRow);
-  if (!seo || !(await listingHasReachableImage(seo))) {
+  if (!seo) {
     return null;
   }
 
@@ -520,6 +512,61 @@ export async function getListingsByCategorySlug(
   }
 
   return toPublicListings(data as ListingRow[]);
+}
+
+export async function getListingsByCategorySlugPage(
+  categorySlug: string,
+  options?: {
+    page?: number;
+    limit?: number;
+    subcategoryId?: string;
+    subcategorySlug?: string;
+  },
+): Promise<PaginatedListings> {
+  const pagination = getPaginationRange(options);
+  const categoryFilter = await resolveCategoryFilter(categorySlug);
+  if (!categoryFilter) {
+    return emptyPaginatedListings(pagination);
+  }
+
+  const supabase = await getSupabaseClient();
+  if (!supabase) {
+    return emptyPaginatedListings(pagination);
+  }
+
+  let query = applyCategoryFilterToQuery(
+    supabase
+      .from("listings")
+      .select(LISTING_SELECT, { count: "exact" })
+      .in("status", PUBLIC_STATUSES)
+      .not("slug", "is", null),
+    categoryFilter,
+  );
+
+  let subcategoryId = options?.subcategoryId ?? "";
+  if (!subcategoryId && options?.subcategorySlug) {
+    const subcategory = await getSubcategoryBySlug(categorySlug, options.subcategorySlug);
+    subcategoryId = subcategory?.id ?? "";
+  }
+
+  if (subcategoryId) {
+    if (isSyntheticCanonicalSubcategoryId(subcategoryId)) {
+      return emptyPaginatedListings(pagination);
+    }
+    query = query.eq("subcategory_id", subcategoryId);
+  }
+
+  const { data, error, count } = await query
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .range(pagination.from, pagination.to);
+
+  if (error || !data) {
+    return emptyPaginatedListings(pagination);
+  }
+
+  const listings = await toPublicListings(data as ListingRow[]);
+  return createPaginatedListings(listings, count ?? listings.length, pagination.page, pagination.limit);
 }
 
 export async function getSimilarListings(
@@ -587,6 +634,5 @@ export async function getPublicListingSlugs(): Promise<Array<{ slug: string; upd
       Boolean(row.slug) && listingHasImages(row),
   );
 
-  const visible = await filterListingsWithReachableImages(rows);
-  return visible.map((row) => ({ slug: row.slug, updated_at: row.updated_at }));
+  return rows.map((row) => ({ slug: row.slug, updated_at: row.updated_at }));
 }

@@ -52,7 +52,7 @@ export function StoreMessageButton({ storeId, storeName }: StoreMessageButtonPro
       <button
         type="button"
         disabled
-        className="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-border bg-white px-5 py-2.5 text-sm font-semibold text-brand-muted"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-border bg-white px-5 py-2.5 text-sm font-semibold text-brand-muted md:w-auto"
       >
         <Loader2 className="h-4 w-4 animate-spin" />
         Yüklənir...
@@ -65,7 +65,7 @@ export function StoreMessageButton({ storeId, storeName }: StoreMessageButtonPro
     return (
       <Link
         href={`/login?returnTo=${encodeURIComponent(returnTo)}`}
-        className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-primary-dark"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-primary-dark md:w-auto"
       >
         <MessageCircle className="h-4 w-4" />
         Mağazaya yaz
@@ -78,7 +78,7 @@ export function StoreMessageButton({ storeId, storeName }: StoreMessageButtonPro
       <button
         type="button"
         disabled
-        className="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-border bg-white px-5 py-2.5 text-sm font-semibold text-brand-muted"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-border bg-white px-5 py-2.5 text-sm font-semibold text-brand-muted md:w-auto"
       >
         <Loader2 className="h-4 w-4 animate-spin" />
         Yüklənir...
@@ -90,7 +90,7 @@ export function StoreMessageButton({ storeId, storeName }: StoreMessageButtonPro
     return (
       <Link
         href="/account/store"
-        className="inline-flex items-center justify-center gap-2 rounded-xl border border-brand-border bg-white px-5 py-2.5 text-sm font-semibold text-brand-primary transition-colors hover:border-brand-primary/40 hover:bg-brand-primary/5"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-border bg-white px-5 py-2.5 text-sm font-semibold text-brand-primary transition-colors hover:border-brand-primary/40 hover:bg-brand-primary/5 md:w-auto"
       >
         <Store className="h-4 w-4" />
         Mağaza paneli
@@ -130,7 +130,7 @@ export function StoreMessageButton({ storeId, storeName }: StoreMessageButtonPro
         type="button"
         onClick={() => void handleClick()}
         disabled={pending}
-        className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-primary-dark disabled:opacity-70"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-primary-dark disabled:opacity-70 md:w-auto"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
         Mağazaya yaz

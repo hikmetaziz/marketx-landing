@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Store } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import {
   type KeyboardEvent,
@@ -19,6 +20,7 @@ import {
   subscribeToMyInbox,
   type MessagingRealtimeStatus,
 } from "@/lib/messaging";
+import { WebPushActivationCard } from "@/components/messaging/WebPushActivationCard";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useAuthUser } from "@/lib/supabase/use-auth-user";
 import type { ConversationPreview } from "@/types/message";
@@ -249,23 +251,25 @@ function ConversationCard({
   return (
     <Link
       href={`/account/messages/${item.id}`}
-      className="block rounded-2xl border border-brand-border/90 bg-white p-4 shadow-sm transition-colors hover:border-brand-primary/30"
+      className="block rounded-xl border border-brand-border/90 bg-white p-3 shadow-sm transition-colors hover:border-brand-primary/30 md:rounded-2xl md:p-4"
     >
       <div className="flex items-start gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-brand-primary-light text-sm font-black text-brand-primary">
+        <div className="relative flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-brand-primary-light text-sm font-black text-brand-primary md:h-12 md:w-12">
           {item.store_logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={item.store_logo_url}
               alt=""
-              className="h-full w-full object-cover"
+              fill
+              sizes="48px"
+              className="object-cover"
             />
           ) : item.listing_image_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={item.listing_image_url}
               alt=""
-              className="h-full w-full object-cover"
+              fill
+              sizes="48px"
+              className="object-cover"
             />
           ) : (
             cardTitle(item).slice(0, 1)
@@ -274,7 +278,7 @@ function ConversationCard({
 
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-3">
-            <h2 className="line-clamp-1 text-base font-bold text-brand-text">
+            <h2 className="line-clamp-1 text-sm font-bold text-brand-text md:text-base">
               {cardTitle(item)}
             </h2>
 
@@ -339,17 +343,17 @@ function StoreApplicationCard({ item }: { item: ConversationPreview }) {
   return (
     <Link
       href={`/account/messages/${item.id}`}
-      className="block rounded-2xl border border-brand-border/90 bg-white p-4 shadow-sm transition-colors hover:border-brand-primary/30"
+      className="block rounded-xl border border-brand-border/90 bg-white p-3 shadow-sm transition-colors hover:border-brand-primary/30 md:rounded-2xl md:p-4"
     >
       <div className="flex items-start gap-3">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-primary-light text-brand-primary">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-primary-light text-brand-primary md:h-12 md:w-12">
           <Store className="h-5 w-5" aria-hidden="true" />
         </div>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="line-clamp-1 text-base font-bold text-brand-text">
+              <h2 className="line-clamp-1 text-sm font-bold text-brand-text md:text-base">
                 {storeName}
               </h2>
 
@@ -479,7 +483,7 @@ function InboxTabs({
     <div
       role="tablist"
       aria-label="Mesaj kateqoriyaları"
-      className="flex gap-1 overflow-x-auto border-b border-brand-border/80"
+      className="flex gap-1 overflow-x-auto border-b border-brand-border/80 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
     >
       {tabs.map((tab, index) => {
         const isActive = active === tab.value;
@@ -498,7 +502,7 @@ function InboxTabs({
             ref={(element) => {
               tabRefs.current[index] = element;
             }}
-            className={`relative flex min-h-11 shrink-0 items-center gap-2 whitespace-nowrap px-4 py-2.5 text-sm font-bold transition-colors ${
+            className={`relative flex min-h-10 shrink-0 items-center gap-2 whitespace-nowrap px-3 py-2 text-xs font-bold transition-colors md:min-h-11 md:px-4 md:py-2.5 md:text-sm ${
               isActive
                 ? "text-brand-primary"
                 : "text-brand-muted hover:text-brand-text"
@@ -551,7 +555,7 @@ function EmptyState({ tab }: { tab: InboxTab }) {
   };
 
   return (
-    <div className="rounded-2xl border border-brand-border/90 bg-brand-surface/60 p-8 text-center">
+    <div className="rounded-xl border border-brand-border/90 bg-brand-surface/60 p-5 text-center md:rounded-2xl md:p-8">
       <p className="text-base font-bold text-brand-text">
         {content[tab].title}
       </p>
@@ -729,7 +733,7 @@ export function MessagesInboxPanel() {
 
   if (!isSupabaseConfigured()) {
     return (
-      <p className="rounded-2xl border border-brand-border/90 bg-brand-surface/60 p-6 text-sm text-brand-muted">
+      <p className="rounded-xl border border-brand-border/90 bg-brand-surface/60 p-4 text-sm text-brand-muted md:rounded-2xl md:p-6">
         Mesajlaşma hazırda əlçatan deyil.
       </p>
     );
@@ -737,7 +741,7 @@ export function MessagesInboxPanel() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center rounded-2xl border border-brand-border/90 bg-brand-surface/60 p-12">
+      <div className="flex items-center justify-center rounded-xl border border-brand-border/90 bg-brand-surface/60 p-8 md:rounded-2xl md:p-12">
         <Loader2 className="h-6 w-6 animate-spin text-brand-primary" />
       </div>
     );
@@ -785,7 +789,9 @@ export function MessagesInboxPanel() {
         : storeApplications.length;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 md:space-y-5">
+      <WebPushActivationCard />
+
       <InboxTabs
         active={activeTab}
         onChange={setActiveTab}

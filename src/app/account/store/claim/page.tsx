@@ -31,7 +31,7 @@ function StateCard({
   action?: string;
 }) {
   return (
-    <div className="card-premium mx-auto max-w-2xl rounded-2xl p-6 text-center hover:translate-y-0">
+    <div className="card-premium mx-auto max-w-2xl rounded-xl p-4 text-center hover:translate-y-0 md:rounded-2xl md:p-6">
       <p className="text-base font-semibold text-brand-text">{title}</p>
       <p className="mt-2 text-sm leading-relaxed text-brand-muted">
         {description}
@@ -104,7 +104,7 @@ export default async function StoreClaimPage() {
       <StoreAccessTabs active="claim" />
 
       {storeAccess.ok ? (
-        <section className="mt-5 flex flex-col gap-4 rounded-2xl border border-brand-border bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <section className="mt-5 flex flex-col gap-3 rounded-xl border border-brand-border bg-white p-4 shadow-sm md:flex-row md:items-center md:justify-between md:gap-4 md:rounded-2xl md:p-5">
           <div>
             <p className="text-sm font-semibold text-brand-text">
               Aktiv mağazanız var
@@ -125,7 +125,7 @@ export default async function StoreClaimPage() {
       ) : null}
 
       {!storeAccess.ok && !hasPendingClaim ? (
-        <section className="mt-5 rounded-2xl border border-brand-border bg-white p-5">
+        <section className="mt-5 rounded-xl border border-brand-border bg-white p-4 md:rounded-2xl md:p-5">
           <p className="text-sm font-semibold text-brand-text">
             Aktiv mağaza girişiniz yoxdur
           </p>
@@ -137,7 +137,7 @@ export default async function StoreClaimPage() {
       ) : null}
 
       {hasPendingClaim ? (
-        <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
+        <section className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-3 md:rounded-2xl md:px-4">
           <p className="text-sm font-semibold text-amber-800">
             Gözləyən müraciətiniz var
           </p>
@@ -148,7 +148,7 @@ export default async function StoreClaimPage() {
         </section>
       ) : null}
 
-      <section id="claim-form" className="mt-7 scroll-mt-24">
+      <section id="claim-form" className="mt-6 scroll-mt-24 md:mt-7">
         <div className="mb-4">
           <h2 className="text-xl font-bold text-brand-text">
             {storeAccess.ok
@@ -166,4 +166,3 @@ export default async function StoreClaimPage() {
     </PageShell>
   );
 }
-

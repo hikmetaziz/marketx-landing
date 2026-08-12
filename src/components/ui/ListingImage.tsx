@@ -32,8 +32,7 @@ export function ListingImage({ src, alt, fallbackClass, sizes, fit = "cover" }: 
     return <ListingImageFallback alt={alt} fallbackClass={fallbackClass} />;
   }
 
-  const skipOptimizer =
-    safeSrc.startsWith("blob:") || safeSrc.includes(".supabase.co/storage/");
+  const skipOptimizer = safeSrc.startsWith("blob:");
 
   return (
     <Image

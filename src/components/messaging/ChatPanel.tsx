@@ -22,12 +22,16 @@ import {
   archiveConversationForCurrentUser,
   blockCustomerStoreConversation,
   closeConversation,
+  fetchConversationArchiveBoundary,
   deleteConversationMessageText,
   editConversationMessage,
+  filterMessagesAfterArchiveBoundary,
   fetchConversationDetail,
   fetchMessages,
   fetchMessagesAfter,
+  fetchMessagesBefore,
   markConversationRead,
+  MESSAGE_HISTORY_PAGE_SIZE,
   mergeMessages,
   sendConversationMessage,
   subscribeToMessages,
@@ -283,7 +287,7 @@ function StoreApplicationInfoCard({
   const effectiveCreatedAt = application?.created_at ?? createdAt;
 
   return (
-    <div className="rounded-2xl border border-brand-border/90 bg-brand-surface/40 p-4">
+    <div className="rounded-xl border border-brand-border/90 bg-brand-surface/40 p-3 md:rounded-2xl md:p-4">
       <div className="mb-3 flex items-center justify-between gap-3">
         <h3 className="text-sm font-bold text-brand-text">Mağaza müraciəti</h3>
         <span className="rounded-full bg-brand-primary-light px-2 py-0.5 text-xs font-bold text-brand-primary">
@@ -294,7 +298,7 @@ function StoreApplicationInfoCard({
         {fields.map(({ label, value }) => {
           if (!value || value === "Qeyd edilməyib") return null;
           return (
-            <div key={label} className="grid grid-cols-[7rem_1fr] gap-2 text-sm">
+            <div key={label} className="grid gap-1 text-sm min-[390px]:grid-cols-[7rem_1fr] min-[390px]:gap-2">
               <dt className="font-semibold text-brand-muted">{label}</dt>
               <dd className="text-brand-text">{value}</dd>
             </div>
@@ -341,6 +345,8 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
   const { supabase, user } = useAuthUser();
   const [conversation, setConversation] = useState<ConversationDetail | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [hasOlderMessages, setHasOlderMessages] = useState(false);
+  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
   const [draft, setDraft] = useState("");
   const [lastFailedDraft, setLastFailedDraft] = useState("");
   const [editingMessageId, setEditingMessageId] = useState("");
@@ -362,6 +368,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
   const markedReadMessageIdsRef = useRef<Set<string>>(new Set());
   const loadRequestRef = useRef(0);
   const loadedConversationIdRef = useRef("");
+  const archiveBoundaryRef = useRef<string | null>(null);
   const fallbackPollingRef = useRef<number | null>(null);
   const syncInFlightRef = useRef(false);
   const refreshInFlightRef = useRef(false);
@@ -469,10 +476,14 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
       ? incoming.filter((message) => message.conversation_id === activeConversationId)
       : incoming;
 
-    if (scopedIncoming.length === 0) return;
+    if (scopedIncoming.length === 0 && !archiveBoundaryRef.current) return;
 
     setMessages((current) => {
-      const next = mergeMessages(current, scopedIncoming);
+      const next = filterMessagesAfterArchiveBoundary(
+        mergeMessages(current, scopedIncoming),
+        archiveBoundaryRef.current,
+      );
+      if (next === current) return current;
       messagesRef.current = next;
       return next;
     });
@@ -500,7 +511,9 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
     try {
       const last = messagesRef.current.at(-1);
       if (!last) {
-        const { data, error } = await fetchMessages(supabase, conversationId);
+        const { data, error } = await fetchMessages(supabase, conversationId, {
+          limit: MESSAGE_HISTORY_PAGE_SIZE,
+        });
         if (loadedConversationIdRef.current !== expectedConversationId) return;
         if (error) {
           if (reportErrors) setErrorMessage(error);
@@ -534,7 +547,9 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
     refreshInFlightRef.current = true;
 
     try {
-      const { data, error } = await fetchMessages(supabase, conversationId);
+      const { data, error } = await fetchMessages(supabase, conversationId, {
+        limit: MESSAGE_HISTORY_PAGE_SIZE,
+      });
       if (loadedConversationIdRef.current !== expectedConversationId) return;
       if (error) {
         if (reportErrors) setErrorMessage(error);
@@ -547,6 +562,66 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
       refreshInFlightRef.current = false;
     }
   }, [conversationId, markNewestVisibleIncomingMessage, mergeMessageBatch, supabase]);
+
+  const handleLoadOlderMessages = useCallback(async () => {
+    if (!supabase || loadingOlderMessages) return;
+
+    const first = messagesRef.current[0];
+    if (!first) {
+      setHasOlderMessages(false);
+      return;
+    }
+
+    const expectedConversationId = conversationId;
+    const list = messageListRef.current;
+    const previousScrollHeight = list?.scrollHeight ?? 0;
+    const previousScrollTop = list?.scrollTop ?? 0;
+
+    setLoadingOlderMessages(true);
+    setErrorMessage("");
+
+    try {
+      const { data, error, hasMore } = await fetchMessagesBefore(
+        supabase,
+        conversationId,
+        {
+          created_at: first.created_at,
+          id: first.id,
+        },
+        {
+          limit: MESSAGE_HISTORY_PAGE_SIZE,
+          archivedAt: archiveBoundaryRef.current,
+        },
+      );
+
+      if (loadedConversationIdRef.current !== expectedConversationId) return;
+
+      if (error) {
+        setErrorMessage(error);
+        return;
+      }
+
+      if (data.length === 0) {
+        setHasOlderMessages(false);
+        return;
+      }
+
+      mergeMessageBatch(data);
+      setHasOlderMessages(hasMore);
+
+      window.requestAnimationFrame(() => {
+        const currentList = messageListRef.current;
+        if (!currentList) return;
+
+        currentList.scrollTop =
+          currentList.scrollHeight - previousScrollHeight + previousScrollTop;
+      });
+    } finally {
+      if (loadedConversationIdRef.current === expectedConversationId) {
+        setLoadingOlderMessages(false);
+      }
+    }
+  }, [conversationId, loadingOlderMessages, mergeMessageBatch, supabase]);
 
   const clearFallbackPolling = useCallback(() => {
     if (fallbackPollingRef.current == null) return;
@@ -584,17 +659,23 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
     if (loadedConversationIdRef.current !== conversationId) {
       loadedConversationIdRef.current = conversationId;
+      archiveBoundaryRef.current = null;
       setConversation(null);
       setMessages([]);
+      setHasOlderMessages(false);
+      setLoadingOlderMessages(false);
       messagesRef.current = [];
       setErrorMessage("");
     }
 
     void (async () => {
       setLoading(true);
-      const [detailRes, messagesRes] = await Promise.all([
+      const [detailRes, messagesRes, archiveBoundaryRes] = await Promise.all([
         fetchConversationDetail(supabase, conversationId, user.id),
-        fetchMessages(supabase, conversationId),
+        fetchMessages(supabase, conversationId, {
+          limit: MESSAGE_HISTORY_PAGE_SIZE,
+        }),
+        fetchConversationArchiveBoundary(supabase, conversationId),
       ]);
 
       if (cancelled || loadRequestRef.current !== requestId) return;
@@ -603,12 +684,22 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
         setErrorMessage(detailRes.error ?? "Söhbət tapılmadı");
         setConversation(null);
         setMessages([]);
+        setHasOlderMessages(false);
         messagesRef.current = [];
         setLoading(false);
         return;
       }
 
       setConversation(detailRes.data);
+      archiveBoundaryRef.current = archiveBoundaryRes.error ? null : archiveBoundaryRes.archivedAt;
+      const visibleInitialMessages = filterMessagesAfterArchiveBoundary(
+        messagesRes.data ?? [],
+        archiveBoundaryRef.current,
+      );
+      setHasOlderMessages(
+        !messagesRes.error &&
+          visibleInitialMessages.length >= MESSAGE_HISTORY_PAGE_SIZE,
+      );
       mergeMessageBatch(messagesRes.data ?? []);
       setErrorMessage(messagesRes.error ?? "");
       setLoading(false);
@@ -890,12 +981,12 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
   };
 
   if (!isSupabaseConfigured()) {
-    return <p className="rounded-2xl border border-brand-border/90 bg-brand-surface/60 p-6 text-sm text-brand-muted">Mesajlaşma hazırda əlçatan deyil.</p>;
+    return <p className="rounded-xl border border-brand-border/90 bg-brand-surface/60 p-4 text-sm text-brand-muted md:rounded-2xl md:p-6">Mesajlaşma hazırda əlçatan deyil.</p>;
   }
 
   if (loading) {
     return (
-      <div className="flex min-h-[420px] items-center justify-center rounded-2xl border border-brand-border/90 bg-brand-surface/60">
+      <div className="flex min-h-[360px] items-center justify-center rounded-xl border border-brand-border/90 bg-brand-surface/60 md:min-h-[420px] md:rounded-2xl">
         <Loader2 className="h-6 w-6 animate-spin text-brand-primary" />
       </div>
     );
@@ -903,7 +994,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
 
   if (!conversation || !user) {
     return (
-      <div className="rounded-2xl border border-brand-border/90 bg-brand-surface/60 p-8 text-center">
+      <div className="rounded-xl border border-brand-border/90 bg-brand-surface/60 p-5 text-center md:rounded-2xl md:p-8">
         <p className="text-sm font-semibold text-red-600">{errorMessage || "Söhbət tapılmadı"}</p>
         <Link href="/account/messages" className="mt-4 inline-flex text-sm font-semibold text-brand-primary hover:text-brand-primary-dark">
           Mesajlara qayıt
@@ -928,8 +1019,8 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
   const emptyCopy = emptyConversationCopy(conversation);
 
   return (
-    <div className="flex min-h-[calc(100vh-12rem)] flex-col overflow-hidden rounded-2xl border border-brand-border/90 bg-white shadow-sm">
-      <div className="flex items-center gap-3 border-b border-brand-border/80 px-4 py-3">
+    <div className="flex h-[calc(100dvh-7.5rem)] min-h-[360px] flex-col overflow-hidden rounded-xl border border-brand-border/90 bg-white shadow-sm md:h-auto md:min-h-[calc(100vh-12rem)] md:rounded-2xl">
+      <div className="flex items-center gap-2 border-b border-brand-border/80 px-3 py-2.5 md:gap-3 md:px-4 md:py-3">
         <Link href="/account/messages" className="shrink-0 text-sm font-semibold text-brand-primary hover:text-brand-primary-dark">
           Mesajlar
         </Link>
@@ -966,17 +1057,30 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
       </div>
 
       {readOnlyMessage ? (
-        <div className="border-b border-brand-border/70 bg-brand-surface/70 px-4 py-3 text-sm font-medium text-brand-muted">
+        <div className="border-b border-brand-border/70 bg-brand-surface/70 px-3 py-2.5 text-sm font-medium text-brand-muted md:px-4 md:py-3">
           {readOnlyMessage}
         </div>
       ) : null}
       {listingUnavailableMessage ? (
-        <div className="border-b border-amber-100 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+        <div className="border-b border-amber-100 bg-amber-50 px-3 py-2.5 text-sm font-semibold text-amber-800 md:px-4 md:py-3">
           {listingUnavailableMessage}
         </div>
       ) : null}
 
-      <div ref={messageListRef} className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+      <div ref={messageListRef} className="flex-1 space-y-3 overflow-y-auto px-3 py-3 md:px-4 md:py-4">
+        {hasOlderMessages ? (
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => void handleLoadOlderMessages()}
+              disabled={loadingOlderMessages}
+              className="inline-flex min-h-9 items-center justify-center gap-2 rounded-full border border-brand-border bg-white px-4 text-xs font-bold text-brand-primary transition-colors hover:border-brand-primary/50 disabled:cursor-wait disabled:opacity-60"
+            >
+              {loadingOlderMessages ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : null}
+              Əvvəlki mesajları yüklə
+            </button>
+          </div>
+        ) : null}
         {messages.length === 0 ? (
           <div className="flex h-full min-h-[240px] flex-col items-center justify-center text-center">
             <p className="text-base font-bold text-brand-text">{emptyCopy.title}</p>
@@ -1023,7 +1127,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
                 data-message-id={message.id}
                 className={`flex ${mine ? "justify-end" : "justify-start"}`}
               >
-                <div className={`max-w-[82%] rounded-2xl px-4 py-2.5 ${mine ? "bg-brand-primary text-white" : "border border-brand-border bg-brand-surface text-brand-text"}`}>
+                <div className={`max-w-[88%] rounded-2xl px-3 py-2 md:max-w-[82%] md:px-4 md:py-2.5 ${mine ? "bg-brand-primary text-white" : "border border-brand-border bg-brand-surface text-brand-text"}`}>
                   {editing ? (
                     <form
                       className="space-y-2"
@@ -1104,7 +1208,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
       </div>
 
       {errorMessage ? (
-        <div className="px-4 pb-2">
+        <div className="px-3 pb-2 md:px-4">
           <p className="text-xs font-semibold text-red-600">{errorMessage}</p>
           {lastFailedDraft && conversation.can_send ? (
             <button type="button" className="mt-1 text-xs font-bold text-brand-primary" onClick={() => void handleSend(lastFailedDraft)}>
@@ -1117,12 +1221,12 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
       {conversation.can_send ? (
         <>
           {messageTemplates.length > 0 ? (
-            <div className="border-t border-brand-border/70 px-3 pt-3">
+            <div className="border-t border-brand-border/70 px-2.5 pt-2.5 md:px-3 md:pt-3">
               <MessageTemplateChips templates={messageTemplates} onSelect={handleTemplateSelect} disabled={sending} />
             </div>
           ) : null}
           <form
-            className="flex items-end gap-2 border-t border-brand-border/80 px-3 py-3"
+            className="flex items-end gap-2 border-t border-brand-border/80 px-2.5 py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom))] md:px-3 md:py-3 md:pb-3"
             onSubmit={(event) => {
               event.preventDefault();
               void handleSend();
@@ -1135,9 +1239,9 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
               placeholder="Mesaj yazın..."
               rows={1}
               maxLength={MESSAGE_BODY_MAX_LENGTH}
-              className="max-h-28 min-h-[42px] flex-1 resize-y rounded-xl border border-brand-border bg-brand-surface/50 px-3 py-2.5 text-sm text-brand-text outline-none focus:border-brand-primary/40"
+              className="max-h-24 min-h-10 flex-1 resize-y rounded-xl border border-brand-border bg-brand-surface/50 px-3 py-2 text-sm text-brand-text outline-none focus:border-brand-primary/40 md:max-h-28 md:min-h-[42px] md:py-2.5"
             />
-            <button type="submit" disabled={!canSubmitMessage(draft, sending, conversation.can_send)} className="inline-flex min-w-[84px] items-center justify-center rounded-xl bg-brand-primary px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50">
+            <button type="submit" disabled={!canSubmitMessage(draft, sending, conversation.can_send)} className="inline-flex min-w-[72px] items-center justify-center rounded-xl bg-brand-primary px-3 py-2.5 text-sm font-bold text-white disabled:opacity-50 md:min-w-[84px] md:px-4">
               {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Göndər"}
             </button>
           </form>

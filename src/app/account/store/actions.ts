@@ -14,6 +14,8 @@ const CLAIM_NOT_ALLOWED_MESSAGE =
   "Bu hesabla mağaza sahiblik müraciəti göndərmək mümkün deyil.";
 const CLAIM_INVALID_MESSAGE =
   "Mağaza kodu və ya sahiblik təsdiq kodu düzgün deyil, ya da bu müraciət artıq edilib.";
+const STORE_EDIT_PERMISSION_MESSAGE =
+  "Bu mağazanı redaktə etmək icazəniz yoxdur.";
 
 function errorMessage(error: unknown): string {
   if (error && typeof error === "object" && "message" in error) {
@@ -163,10 +165,32 @@ export async function updateMyStore(
   }
 
   const supabase = await createClient();
+  const normalizedStoreId = storeId.trim();
 
-  // RLS: yalnız store_members (owner/manager) update edə bilər.
+  if (!normalizedStoreId) {
+    return { ok: false, error: "Mağaza məlumatı tapılmadı." };
+  }
+
+  const { data: membership, error: membershipError } = await supabase
+    .from("store_members")
+    .select("id")
+    .eq("store_id", normalizedStoreId)
+    .eq("user_id", user.id)
+    .eq("role", "owner")
+    .limit(1)
+    .maybeSingle();
+
+  if (membershipError) {
+    return { ok: false, error: STORE_EDIT_PERMISSION_MESSAGE };
+  }
+
+  if (!membership) {
+    return { ok: false, error: STORE_EDIT_PERMISSION_MESSAGE };
+  }
+
+  // RLS: yalnız exact store_members owner üzvlüyü update edə bilər.
   // Həssas sahələr (owner_id, status, store_code) trigger ilə qorunur.
-  const { error } = await supabase
+  const { data: updatedStore, error } = await supabase
     .from("stores")
     .update({
       name: input.name.trim(),
@@ -177,11 +201,17 @@ export async function updateMyStore(
       city: input.city?.trim() || null,
       map_url: input.mapUrl?.trim() || null,
     })
-    .eq("id", storeId)
-    .eq("owner_id", user.id);
+    .eq("id", normalizedStoreId)
+    .eq("status", "claimed")
+    .select("id")
+    .maybeSingle();
 
   if (error) {
     return { ok: false, error: errorMessage(error) };
+  }
+
+  if (!updatedStore) {
+    return { ok: false, error: STORE_EDIT_PERMISSION_MESSAGE };
   }
 
   revalidatePath("/account/store");

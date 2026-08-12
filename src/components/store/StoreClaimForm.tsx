@@ -185,7 +185,7 @@ export function StoreClaimForm({ myRequests }: StoreClaimFormProps) {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4 md:space-y-5">
       {errorMessage ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {errorMessage}
@@ -200,9 +200,9 @@ export function StoreClaimForm({ myRequests }: StoreClaimFormProps) {
 
       <form
         onSubmit={handleSubmit}
-        className="rounded-2xl border border-brand-border bg-white p-5 shadow-sm sm:p-6"
+        className="rounded-xl border border-brand-border bg-white p-4 shadow-sm md:rounded-2xl md:p-6"
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2 md:gap-4">
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold text-brand-text">
               Mağaza kodu *
@@ -239,7 +239,7 @@ export function StoreClaimForm({ myRequests }: StoreClaimFormProps) {
             <span className="font-normal text-brand-muted">(istəyə görə)</span>
           </summary>
 
-          <div className="space-y-4 border-t border-brand-border/80 p-4">
+          <div className="space-y-3 border-t border-brand-border/80 p-3.5 md:space-y-4 md:p-4">
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold text-brand-text">
                 Telefon
@@ -247,7 +247,7 @@ export function StoreClaimForm({ myRequests }: StoreClaimFormProps) {
               <input
                 name="phone"
                 maxLength={30}
-                placeholder="+994 50 000 00 00"
+                placeholder="+994 50 XXX XX XX"
                 className={inputClass}
               />
             </label>
@@ -280,7 +280,7 @@ export function StoreClaimForm({ myRequests }: StoreClaimFormProps) {
           </div>
         </details>
 
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="mt-5 flex flex-col gap-3 md:flex-row md:items-center">
           <button
             type="submit"
             disabled={isPending}
@@ -302,9 +302,9 @@ export function StoreClaimForm({ myRequests }: StoreClaimFormProps) {
       {myRequests.length > 0 ? (
         <details
           open={hasPending}
-          className="rounded-2xl border border-brand-border bg-white shadow-sm"
+          className="rounded-xl border border-brand-border bg-white shadow-sm md:rounded-2xl"
         >
-          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-5 py-4 sm:px-6">
+          <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3.5 md:px-6 md:py-4">
             <span className="font-semibold text-brand-text">
               Müraciət tarixçəsi
             </span>
@@ -313,7 +313,7 @@ export function StoreClaimForm({ myRequests }: StoreClaimFormProps) {
             </span>
           </summary>
 
-          <div className="space-y-3 border-t border-brand-border p-5 sm:p-6">
+          <div className="space-y-3 border-t border-brand-border p-4 md:p-6">
             {myRequests.map((request) => {
               const display = getClaimDisplay(
                 request.status as ClaimStatus,
@@ -322,7 +322,7 @@ export function StoreClaimForm({ myRequests }: StoreClaimFormProps) {
               return (
                 <article
                   key={request.id}
-                  className="rounded-xl border border-brand-border bg-white p-4"
+                  className="rounded-xl border border-brand-border bg-white p-3.5 md:p-4"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>

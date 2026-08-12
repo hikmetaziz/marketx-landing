@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { InputHTMLAttributes } from "react";
 import { useState } from "react";
 
+import { signOutWithCleanup } from "@/lib/auth/sign-out";
 import {
   isAuthConfirmed,
   translateAuthError,
@@ -71,7 +72,7 @@ function TextField({
         inputMode={inputMode}
         aria-invalid={Boolean(error)}
         aria-describedby={error ? `${id}-error` : undefined}
-        className={`w-full rounded-xl border bg-brand-surface px-4 py-3 text-brand-text outline-none transition-colors focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 ${
+        className={`w-full rounded-xl border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none transition-colors focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3 ${
           error ? "border-red-300" : "border-brand-border"
         }`}
         value={value}
@@ -120,7 +121,7 @@ function PasswordField({
           autoComplete={autoComplete}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${id}-error` : undefined}
-          className={`w-full rounded-xl border bg-brand-surface px-4 py-3 pr-11 text-brand-text outline-none transition-colors focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 ${
+          className={`w-full rounded-xl border bg-brand-surface px-3.5 py-2.5 pr-11 text-brand-text outline-none transition-colors focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3 ${
             error ? "border-red-300" : "border-brand-border"
           }`}
           value={value}
@@ -128,7 +129,7 @@ function PasswordField({
         />
         <button
           type="button"
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-muted transition-colors hover:text-brand-text"
+          className="absolute right-2 top-1/2 inline-flex h-9 w-9 -translate-y-1/2 items-center justify-center text-brand-muted transition-colors hover:text-brand-text md:right-3"
           onClick={onToggle}
           aria-label={showPassword ? "Parolu gizlət" : "Parolu göstər"}
         >
@@ -145,7 +146,7 @@ function PasswordField({
 }
 
 function authCardClass() {
-  return "card-premium mx-auto w-full max-w-md rounded-2xl p-5 hover:translate-y-0 sm:p-6";
+  return "card-premium mx-auto w-full max-w-md rounded-xl p-4 hover:translate-y-0 md:rounded-2xl md:p-6";
 }
 
 function parseRegistrationIdentityCheck(data: unknown): RegistrationIdentityCheck {
@@ -269,7 +270,7 @@ export function ResponsiveAuthForm() {
 
   const handleSignOut = async () => {
     setLoadingAction("signout");
-    await supabase.auth.signOut({ scope: "local" });
+    await signOutWithCleanup(supabase);
     setLoadingAction(null);
     clearMessages();
     router.refresh();
@@ -292,15 +293,13 @@ export function ResponsiveAuthForm() {
 
     if (!error && !profile) {
       return {
-        message:
-          "Profil sətri tapılmadı. Supabase-də AUTH_PROFILES_PHONE_SYNC.sql migration işlədilməlidir.",
+        message: "Profil məlumatları yenilənmədi. Yenidən cəhd edin.",
       };
     }
 
     if (String(error?.message ?? "").toLowerCase().includes("phone")) {
       return {
-        message:
-          "profiles.phone sütunu tapılmadı. Supabase-də AUTH_PROFILES_PHONE_SYNC.sql migration işlədilməlidir.",
+        message: "Profil məlumatları yenilənmədi. Yenidən cəhd edin.",
       };
     }
 
@@ -422,9 +421,7 @@ export function ResponsiveAuthForm() {
       setLoadingAction(null);
       const text = String(identityError.message ?? "").toLowerCase();
       if (text.includes("check_registration_identity") || text.includes("function") || text.includes("schema cache")) {
-        setErrorMessage(
-          "Qeydiyyat yoxlaması aktiv deyil. Supabase-də AUTH_REGISTRATION_IDENTITY_CHECK.sql migration işlədilməlidir.",
-        );
+        setErrorMessage("Qeydiyyat məlumatları yoxlanmadı. Yenidən cəhd edin.");
         return;
       }
       setErrorMessage("Qeydiyyat məlumatları yoxlanmadı. Yenidən cəhd edin.");
@@ -524,7 +521,7 @@ export function ResponsiveAuthForm() {
       <div className={`${authCardClass()} text-center`}>
         <p className="text-lg font-bold text-brand-text">Xoş gəldiniz, {displayName}!</p>
         <p className="mt-2 text-sm text-brand-muted">Artıq hesabınıza daxil olmusunuz.</p>
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+        <div className="mt-5 flex flex-col gap-3 md:mt-6 md:flex-row md:justify-center">
           <Link
             href={returnTo}
             className="btn-primary-premium inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white"
@@ -654,7 +651,7 @@ export function ResponsiveAuthForm() {
             id="auth-phone"
             label="Telefon nömrəsi"
             type="tel"
-            placeholder="050 123 45 67"
+            placeholder="050 XXX XX XX"
             autoComplete="tel"
             value={phone}
             error={fieldErrors.phone}

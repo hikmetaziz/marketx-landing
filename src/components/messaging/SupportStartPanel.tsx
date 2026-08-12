@@ -121,14 +121,14 @@ export function SupportStartPanel() {
   const placeholder = CUSTOMER_TOPIC_PLACEHOLDERS[topic];
 
   return (
-    <div className="rounded-2xl border border-brand-border/90 bg-white p-5 shadow-sm">
-      <div className="grid gap-4 sm:grid-cols-2">
+    <div className="rounded-xl border border-brand-border/90 bg-white p-4 shadow-sm md:rounded-2xl md:p-5">
+      <div className="grid gap-3 md:grid-cols-2 md:gap-4">
         <label className="block">
           <span className="mb-1.5 block text-sm font-semibold text-brand-text">Mövzu</span>
           <select
             value={topic}
             onChange={(event) => setTopic(event.target.value as CustomerSupportTopic)}
-            className="w-full rounded-xl border border-brand-border bg-brand-surface/40 px-3 py-3 text-sm font-semibold text-brand-text outline-none focus:border-brand-primary/40"
+            className="w-full rounded-xl border border-brand-border bg-brand-surface/40 px-3 py-2.5 text-sm font-semibold text-brand-text outline-none focus:border-brand-primary/40 md:py-3"
           >
             {CUSTOMER_SUPPORT_TOPICS.map((item) => (
               <option key={item} value={item}>
@@ -143,7 +143,7 @@ export function SupportStartPanel() {
             value={subject}
             onChange={(event) => setSubject(event.target.value)}
             maxLength={120}
-            className="w-full rounded-xl border border-brand-border bg-brand-surface/40 px-3 py-3 text-sm text-brand-text outline-none focus:border-brand-primary/40"
+            className="w-full rounded-xl border border-brand-border bg-brand-surface/40 px-3 py-2.5 text-sm text-brand-text outline-none focus:border-brand-primary/40 md:py-3"
             placeholder={placeholder.subject}
           />
         </label>
@@ -155,11 +155,11 @@ export function SupportStartPanel() {
           onChange={(event) => setDetails(event.target.value)}
           rows={5}
           maxLength={1600}
-          className="w-full resize-y rounded-xl border border-brand-border bg-brand-surface/40 px-3 py-3 text-sm text-brand-text outline-none focus:border-brand-primary/40"
+          className="w-full resize-y rounded-xl border border-brand-border bg-brand-surface/40 px-3 py-2.5 text-sm text-brand-text outline-none focus:border-brand-primary/40 md:py-3"
           placeholder={placeholder.details}
         />
       </label>
-      <label className="mt-4 block rounded-xl border border-dashed border-brand-border bg-brand-surface/30 px-4 py-3">
+      <label className="mt-4 block rounded-xl border border-dashed border-brand-border bg-brand-surface/30 px-3.5 py-3 md:px-4">
         <span className="block text-sm font-semibold text-brand-text">Şəkil əlavə et</span>
         <span className="mt-1 block text-xs text-brand-muted">Lazımdırsa screenshot və ya foto əlavə edin. Maksimum {SUPPORT_ATTACHMENT_MAX_FILES} şəkil.</span>
         <input
@@ -176,7 +176,7 @@ export function SupportStartPanel() {
         type="button"
         onClick={() => void start()}
         disabled={!canSubmit}
-        className="mt-4 inline-flex items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-3 text-sm font-bold text-white disabled:opacity-60"
+        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60 md:w-auto md:py-3"
       >
         {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
         MarktX Dəstəyə yaz

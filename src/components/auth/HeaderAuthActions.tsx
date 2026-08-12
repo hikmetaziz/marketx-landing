@@ -12,9 +12,10 @@ import {
   User as UserIcon,
 } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { MessageNotificationHost } from "@/components/messaging/MessageNotificationHost";
+import { signOutWithCleanup } from "@/lib/auth/sign-out";
 import { useAuthUser } from "@/lib/supabase/use-auth-user";
 
 export type UserStore = {
@@ -22,6 +23,14 @@ export type UserStore = {
   name: string | null;
   slug: string | null;
 } | null;
+
+type UserStoreLookupStatus = "idle" | "loading" | "loaded";
+
+type UserStoreLookup = {
+  userId: string | null;
+  store: UserStore;
+  status: UserStoreLookupStatus;
+};
 
 const UNREAD_COUNT_EVENT = "marktx:message-unread-count";
 let latestUnreadMessageCount = 0;
@@ -75,8 +84,15 @@ export function HeaderAuthActions({
 }: HeaderAuthActionsProps) {
   const hydrated = useHydrated();
   const { user, loading, isAdmin, canAccessSupportPanel, supabase } = useAuthUser();
-  const [userStore, setUserStore] = useState<UserStore>(null);
+  const userId = user?.id ?? null;
+  const [userStoreLookup, setUserStoreLookup] = useState<UserStoreLookup>({
+    userId: null,
+    store: null,
+    status: "idle",
+  });
   const [unreadMessageCount, setUnreadMessageCount] = useState(latestUnreadMessageCount);
+  const userStoreRequestForRef = useRef<string | null>(null);
+  const userStoreRequestSeqRef = useRef(0);
 
   const displayName =
     (user?.user_metadata?.display_name as string | undefined) ??
@@ -104,21 +120,37 @@ export function HeaderAuthActions({
     };
   }, []);
 
-  useEffect(() => {
+  const loadUserStore = useCallback(() => {
     const currentSupabase = supabase;
-    const currentUser = user;
-    if (!currentSupabase || !currentUser) {
+    const currentUserId = userId;
+    if (!currentSupabase || !currentUserId) {
       return;
     }
 
-    let cancelled = false;
+    if (
+      (userStoreLookup.userId === currentUserId && userStoreLookup.status === "loaded") ||
+      userStoreRequestForRef.current === currentUserId
+    ) {
+      return;
+    }
+
+    const requestSeq = userStoreRequestSeqRef.current + 1;
+    userStoreRequestSeqRef.current = requestSeq;
+    userStoreRequestForRef.current = currentUserId;
+    setUserStoreLookup((current) => ({
+      userId: currentUserId,
+      store: current.userId === currentUserId ? current.store : null,
+      status: "loading",
+    }));
 
     void (async () => {
+      let nextStore: UserStore = null;
+
       try {
         const { data: membership } = await currentSupabase
           .from("store_members")
           .select("store_id")
-          .eq("user_id", currentUser.id)
+          .eq("user_id", currentUserId)
           .in("role", ["owner", "manager", "staff"])
           .order("created_at", { ascending: false })
           .limit(1)
@@ -132,49 +164,58 @@ export function HeaderAuthActions({
             .eq("id", storeId)
             .maybeSingle();
 
-          if (!error && storeRow && !cancelled) {
-            setUserStore({
+          if (!error && storeRow) {
+            nextStore = {
               id: String(storeRow.id),
               name: typeof storeRow.name === "string" ? storeRow.name : null,
               slug: typeof storeRow.slug === "string" ? storeRow.slug : null,
-            });
-            return;
+            };
           }
         }
 
-        const { data: ownedStore, error: ownedError } = await currentSupabase
-          .from("stores")
-          .select("id, name, slug")
-          .eq("owner_id", currentUser.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        if (!nextStore) {
+          const { data: ownedStore, error: ownedError } = await currentSupabase
+            .from("stores")
+            .select("id, name, slug")
+            .eq("owner_id", currentUserId)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-        if (!ownedError && ownedStore && !cancelled) {
-          setUserStore({
-            id: String(ownedStore.id),
-            name: typeof ownedStore.name === "string" ? ownedStore.name : null,
-            slug: typeof ownedStore.slug === "string" ? ownedStore.slug : null,
-          });
-          return;
+          if (!ownedError && ownedStore) {
+            nextStore = {
+              id: String(ownedStore.id),
+              name: typeof ownedStore.name === "string" ? ownedStore.name : null,
+              slug: typeof ownedStore.slug === "string" ? ownedStore.slug : null,
+            };
+          }
         }
-
-        if (!cancelled) setUserStore(null);
       } catch {
-        if (!cancelled) setUserStore(null);
+        nextStore = null;
+      }
+
+      if (userStoreRequestSeqRef.current === requestSeq) {
+        userStoreRequestForRef.current = null;
+        setUserStoreLookup({
+          userId: currentUserId,
+          store: nextStore,
+          status: "loaded",
+        });
       }
     })();
+  }, [supabase, userId, userStoreLookup.status, userStoreLookup.userId]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [supabase, user]);
+  useEffect(() => {
+    if (homepage && mobile && userId) {
+      loadUserStore();
+    }
+  }, [homepage, loadUserStore, mobile, userId]);
 
   const handleSignOut = async () => {
     if (!supabase) return;
     latestUnreadMessageCount = 0;
     setUnreadMessageCount(0);
-    await supabase.auth.signOut({ scope: "local" });
+    await signOutWithCleanup(supabase);
     onNavigate?.();
     window.location.href = "/";
   };
@@ -191,16 +232,23 @@ export function HeaderAuthActions({
     return <HeaderAuthPlaceholder mobile={mobile} />;
   }
 
+  const currentUserStore = userStoreLookup.userId === userId ? userStoreLookup.store : null;
+  const currentUserStoreLookupStatus =
+    userStoreLookup.userId === userId ? userStoreLookup.status : "idle";
+
   if (homepage) {
+    const storeProfileLink = currentUserStore
+      ? { href: "/account/store", label: "Mağazam", icon: Store }
+      : currentUserStoreLookupStatus === "loading"
+        ? { href: "/account/store", label: "Mağazam", icon: Store }
+        : { href: "/account/store/apply", label: "Mağaza aç", icon: Store };
     const profileLinks = [
       { href: "/account", label: "Profilim", icon: UserIcon },
       { href: "/account/favorites", label: "Seçilmişlər", icon: Heart },
       { href: "/account/listings", label: "Elanlarım", icon: ClipboardList },
       { href: "/account/messages", label: "Mesajlar", icon: MessageCircle },
       { href: "/account/support", label: "Dəstək", icon: Headset },
-      userStore
-        ? { href: "/account/store", label: "Mağazam", icon: Store }
-        : { href: "/account/store/apply", label: "Mağaza aç", icon: Store },
+      storeProfileLink,
     ] as const;
     const profileInitial = displayName?.trim().charAt(0).toLocaleUpperCase("az-AZ") || "P";
 
@@ -264,7 +312,14 @@ export function HeaderAuthActions({
               </button>
             </>
           ) : (
-            <details className="group relative">
+            <details
+              className="group relative"
+              onToggle={(event) => {
+                if (event.currentTarget.open) {
+                  loadUserStore();
+                }
+              }}
+            >
               <summary
                 className="grid h-10 w-10 cursor-pointer list-none place-items-center rounded-full bg-brand-navy text-xs font-extrabold text-white transition-colors hover:bg-brand-primary group-open:bg-brand-primary"
                 aria-label="Profil menyusunu aç"

@@ -52,7 +52,7 @@ export default async function EditMyListingPage({ params }: Props) {
       <AccountSubnav active="listings" />
       <Link
         href="/account/listings"
-        className="mb-6 inline-block text-sm font-semibold text-brand-primary hover:text-brand-primary-dark"
+        className="mb-4 inline-block text-sm font-semibold text-brand-primary hover:text-brand-primary-dark md:mb-6"
       >
         ← Mənim elanlarım
       </Link>

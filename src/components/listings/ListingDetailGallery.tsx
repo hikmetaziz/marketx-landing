@@ -36,8 +36,8 @@ export function ListingDetailGallery({
       : `${selectedIndex + 1} / ${totalCount}`;
 
   return (
-    <div className="min-w-0 space-y-3">
-      <div className="relative overflow-hidden rounded-2xl border border-brand-border/80 bg-brand-surface shadow-sm">
+    <div className="min-w-0 space-y-2.5 md:space-y-3">
+      <div className="relative overflow-hidden rounded-xl border border-brand-border/80 bg-brand-surface shadow-sm md:rounded-2xl">
         <div className="relative aspect-[4/3] w-full">
           {selectedImage ? (
             <ListingImage
@@ -63,7 +63,7 @@ export function ListingDetailGallery({
       </div>
 
       {totalCount > 1 ? (
-        <div className="grid grid-cols-5 gap-2 sm:grid-cols-6">
+        <div className="grid grid-cols-5 gap-1.5 sm:grid-cols-6 md:gap-2">
           {visibleImages.map((image, index) => (
             <button
               key={`${image}-${index}`}

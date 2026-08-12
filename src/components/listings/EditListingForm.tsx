@@ -47,7 +47,7 @@ type EditListingFormProps = {
 };
 
 const selectClass =
-  "w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-3 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15";
+  "w-full rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3";
 
 function getUploadStageLabel(stage: UploadProgressItem["stage"]) {
   if (stage === "compressing") return "Sıxılır";
@@ -247,7 +247,7 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
     }
 
     if (!isValidContactPhone(contactPhone)) {
-      setErrorMessage("Telefon düzgün deyil. Nümunə: 050 123 45 67");
+      setErrorMessage("Telefon düzgün deyil. Nümunə: 050 XXX XX XX");
       return;
     }
 
@@ -348,16 +348,16 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
       {errorMessage ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {errorMessage}
         </div>
       ) : null}
 
-      <section className="card-premium space-y-4 rounded-2xl p-5 hover:translate-y-0">
+      <section className="card-premium space-y-4 rounded-xl p-4 hover:translate-y-0 md:rounded-2xl md:p-5">
         <h2 className="text-base font-bold text-brand-text">Kateqoriya</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2 md:gap-4">
           <div>
             <label className="mb-2 block text-sm font-semibold text-brand-text">Əsas kateqoriya</label>
             <select value={categoryId} onChange={(e) => handleCategoryChange(e.target.value)} className={selectClass}>
@@ -417,11 +417,11 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
         ) : null}
       </section>
 
-      <section className="card-premium space-y-4 rounded-2xl p-5 hover:translate-y-0">
+      <section className="card-premium space-y-4 rounded-xl p-4 hover:translate-y-0 md:rounded-2xl md:p-5">
         <h2 className="text-base font-bold text-brand-text">Şəkillər</h2>
         <p className="text-sm text-brand-muted">Maksimum {maxListingImages} şəkil.</p>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 md:gap-3">
           {images.map((img, index) => (
             <div
               key={img.id}
@@ -475,7 +475,7 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
         />
       </section>
 
-      <section className="card-premium space-y-4 rounded-2xl p-5 hover:translate-y-0">
+      <section className="card-premium space-y-4 rounded-xl p-4 hover:translate-y-0 md:rounded-2xl md:p-5">
         <h2 className="text-base font-bold text-brand-text">Elan məlumatları</h2>
 
         <div>
@@ -484,11 +484,11 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-3 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15"
+            className="w-full rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3"
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2 md:gap-4">
           <div>
             <label className="mb-2 block text-sm font-semibold text-brand-text">Qiymət (AZN)</label>
             <input
@@ -497,7 +497,7 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
               step="1"
               value={price}
               onChange={(e) => setPrice(e.target.value)}
-              className="w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-3 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15"
+              className="w-full rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3"
             />
           </div>
           <div>
@@ -505,7 +505,7 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
             <select
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              className="w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-3 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15"
+              className="w-full rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3"
             >
               <option value="">Seçin</option>
               {AZERBAIJAN_CITY_OPTIONS.map((option) => (
@@ -523,7 +523,7 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
-            className="w-full resize-y rounded-xl border border-brand-border bg-brand-surface px-4 py-3 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15"
+            className="w-full resize-y rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3"
           />
         </div>
 
@@ -533,13 +533,13 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
             type="tel"
             value={contactPhone}
             onChange={(e) => setContactPhone(e.target.value)}
-            placeholder="050 123 45 67"
-            className="w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-3 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15"
+            placeholder="050 XXX XX XX"
+            className="w-full rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3"
           />
         </div>
       </section>
 
-      <section className="card-premium space-y-3 rounded-2xl p-5 hover:translate-y-0">
+      <section className="card-premium space-y-3 rounded-xl p-4 hover:translate-y-0 md:rounded-2xl md:p-5">
         <label className="flex cursor-pointer items-center justify-between gap-4">
           <span>
             <span className="block text-sm font-semibold text-brand-text">Vəziyyət: {isNew ? "Yeni" : "İşlənmiş"}</span>
@@ -576,13 +576,13 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
         </label>
       </section>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <p className="text-xs text-brand-muted">
           Vacib dəyişikliklər moderator yoxlanışına göndərilə bilər.
         </p>
-        <div className="flex flex-col items-stretch gap-3 sm:items-end">
+        <div className="flex flex-col items-stretch gap-3 md:items-end">
           {uploadProgressItems.length > 0 ? (
-            <div className="w-full min-w-0 rounded-xl border border-brand-border bg-brand-surface p-3 text-left sm:w-80">
+            <div className="w-full min-w-0 rounded-xl border border-brand-border bg-brand-surface p-3 text-left md:w-80">
               <div className="mb-2 flex items-center justify-between gap-3 text-xs font-semibold text-brand-text">
                 <span>Şəkillər yüklənir</span>
                 <span>{uploadProgressPercent}%</span>

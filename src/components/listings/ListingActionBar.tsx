@@ -14,6 +14,7 @@ import { LiveListingFavoriteButton } from "@/components/listings/LiveListingFavo
 import { ListingPhoneReveal } from "@/components/listings/ListingPhoneReveal";
 import { ListingReportButton } from "@/components/listings/ListingReportButton";
 import { ListingShareButton } from "@/components/listings/ListingShareButton";
+import { OpenInAppLink } from "@/components/listings/OpenInAppLink";
 import { ListingMessageButton } from "@/components/messaging/ListingMessageButton";
 import { getContactPhoneTelHref, normalizeContactPhone } from "@/lib/contact-phone";
 import type { LiveListingDetailView } from "@/types/live-listing";
@@ -99,7 +100,7 @@ export function ListingActionBar({
           </p>
         ) : null}
 
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 md:grid-cols-2">
           <Link href={`/account/listings/${listing.id}/edit`} className={ownerButtonClass}>
             <Pencil className="h-4 w-4" />
             Düzəliş et
@@ -140,7 +141,8 @@ export function ListingActionBar({
     <section className="space-y-3">
       <div className="space-y-3">
         <LiveListingFavoriteButton key={listing.id} listingId={listing.id} />
-        <div className="grid gap-2.5 sm:grid-cols-2">
+        <OpenInAppLink slug={listing.slug} />
+        <div className="grid gap-2.5 md:grid-cols-2">
           <ListingMessageButton
             listingId={listing.id}
             storeId={listing.store_id ?? null}

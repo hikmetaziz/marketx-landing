@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
+import { signOutWithCleanup } from "@/lib/auth/sign-out";
 import {
   isEmailConfirmed,
   translateAuthError,
@@ -138,7 +139,7 @@ export function LoginForm() {
 
   const handleSignOut = async () => {
     setLoadingAction("login");
-    await supabase.auth.signOut({ scope: "local" });
+    await signOutWithCleanup(supabase);
     setLoadingAction(null);
     clearMessages();
     router.refresh();

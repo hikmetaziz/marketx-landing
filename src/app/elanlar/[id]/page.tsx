@@ -125,7 +125,7 @@ export default async function ElanDetailPage({ params }: Props) {
     );
 
     return (
-      <article className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+      <article className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-12 lg:px-8">
         <JsonLd
           data={buildListingJsonLd({
             title: listing.title,
@@ -171,7 +171,7 @@ export default async function ElanDetailPage({ params }: Props) {
   const similarSamples = getSimilarSampleListings(sampleListing.slug, 4);
 
   return (
-    <article className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-12 lg:px-8">
+    <article className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-12 lg:px-8">
       <Link
         href="/"
         className="text-sm font-semibold text-brand-primary transition-colors hover:text-brand-primary-dark"

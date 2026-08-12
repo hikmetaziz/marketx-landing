@@ -33,6 +33,9 @@ end;
 $$;
 
 -- 3) Update admin support queue function to return last_message_body.
+drop function if exists
+  public.list_admin_support_conversations(integer, integer);
+
 create or replace function public.list_admin_support_conversations(
   p_limit integer default 50,
   p_offset integer default 0
@@ -98,6 +101,12 @@ begin
   offset v_offset;
 end;
 $$;
+
+revoke all on function public.list_admin_support_conversations(integer, integer)
+from public, anon;
+
+grant execute on function public.list_admin_support_conversations(integer, integer)
+to authenticated;
 
 -- 4) Backfill existing conversations with their latest message body.
 update public.conversations c

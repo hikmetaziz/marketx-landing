@@ -62,15 +62,15 @@ export function LiveListingDetail({
   ];
 
   return (
-    <div className="mx-auto max-w-3xl space-y-4">
+    <div className="mx-auto max-w-3xl space-y-3 md:space-y-4">
       <ListingDetailGallery listing={listing} title={listing.title} />
 
-      <div className="space-y-4 px-0.5">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-brand-text sm:text-[1.75rem]">
+      <div className="space-y-3 px-0.5 md:space-y-4">
+        <div className="space-y-1.5 md:space-y-2">
+          <h1 className="text-[1.35rem] font-extrabold leading-tight tracking-tight text-brand-text sm:text-2xl md:text-[1.75rem]">
             {listing.title}
           </h1>
-          <p className="text-2xl font-extrabold text-brand-primary">{formatListingPrice(listing.price)}</p>
+          <p className="text-[1.35rem] font-extrabold text-brand-primary sm:text-2xl">{formatListingPrice(listing.price)}</p>
           {listingNumberLabel ? <ListingDetailNumber label={listingNumberLabel} /> : null}
           <p className="text-sm text-brand-muted">{createdAtLabel}</p>
         </div>

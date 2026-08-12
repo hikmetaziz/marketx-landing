@@ -54,7 +54,7 @@ type CreateListingFormProps = {
 };
 
 const selectClass =
-  "w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-3 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15";
+  "w-full rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3";
 
 const STORE_SELECTION_REQUIRED_MESSAGE = "Elanı yerləşdirəcəyiniz mağazanı seçin.";
 
@@ -291,7 +291,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
     }
 
     if (!isValidContactPhone(contactPhone)) {
-      setErrorMessage("Telefon düzgün deyil. Nümunə: 050 123 45 67");
+      setErrorMessage("Telefon düzgün deyil. Nümunə: 050 XXX XX XX");
       return;
     }
 
@@ -414,7 +414,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
 
   if (!isSupabaseConfigured() || !supabase) {
     return (
-      <div className="card-premium rounded-2xl p-6 text-center hover:translate-y-0">
+      <div className="card-premium rounded-xl p-4 text-center hover:translate-y-0 md:rounded-2xl md:p-6">
         <p className="text-sm text-brand-muted">Supabase konfiqurasiyası tapılmadı.</p>
       </div>
     );
@@ -422,7 +422,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
 
   if (authLoading) {
     return (
-      <div className="card-premium flex items-center justify-center gap-3 rounded-2xl p-10 hover:translate-y-0">
+      <div className="card-premium flex items-center justify-center gap-3 rounded-xl p-6 hover:translate-y-0 md:rounded-2xl md:p-10">
         <Loader2 className="h-6 w-6 animate-spin text-brand-primary" />
         <span className="text-sm text-brand-muted">Yoxlanılır...</span>
       </div>
@@ -431,7 +431,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
 
   if (!user) {
     return (
-      <div className="card-premium rounded-2xl p-6 text-center hover:translate-y-0">
+      <div className="card-premium rounded-xl p-4 text-center hover:translate-y-0 md:rounded-2xl md:p-6">
         <p className="text-sm text-brand-muted">Sessiya tapılmadı.</p>
         <Link
           href="/login?returnTo=/elan-yarat&mode=register"
@@ -445,7 +445,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
 
   if (taxonomy.categories.length === 0) {
     return (
-      <div className="card-premium rounded-2xl p-6 text-center hover:translate-y-0">
+      <div className="card-premium rounded-xl p-4 text-center hover:translate-y-0 md:rounded-2xl md:p-6">
         <p className="text-sm text-brand-muted">
           Kateqoriya siyahısı yüklənmədi. Səhifəni yeniləyin və ya bir az sonra yenidən cəhd edin.
         </p>
@@ -455,10 +455,10 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
 
   if (successMessage) {
     return (
-      <div className="card-premium mx-auto max-w-lg rounded-2xl p-6 text-center hover:translate-y-0">
+      <div className="card-premium mx-auto max-w-lg rounded-xl p-4 text-center hover:translate-y-0 md:rounded-2xl md:p-6">
         <p className="text-lg font-bold text-brand-text">Uğurlu!</p>
         <p className="mt-2 text-sm leading-relaxed text-brand-muted">{successMessage}</p>
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+        <div className="mt-5 flex flex-col gap-3 md:mt-6 md:flex-row md:justify-center">
           <button
             type="button"
             onClick={() => setSuccessMessage("")}
@@ -478,7 +478,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-4 md:space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-brand-muted">Bir neçə addımda məhsulunuzu satışa çıxarın</p>
         <button
@@ -490,7 +490,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
         </button>
       </div>
 
-      <section className="card-premium space-y-3 rounded-2xl p-5 hover:translate-y-0">
+      <section className="card-premium space-y-3 rounded-xl p-4 hover:translate-y-0 md:rounded-2xl md:p-5">
         <label htmlFor="listing-store-id" className="block text-sm font-semibold text-brand-text">
           Elanı hansı mağazadan yerləşdirirsiniz?
         </label>
@@ -523,9 +523,9 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
         </div>
       ) : null}
 
-      <section className="card-premium space-y-4 rounded-2xl p-5 hover:translate-y-0">
+      <section className="card-premium space-y-4 rounded-xl p-4 hover:translate-y-0 md:rounded-2xl md:p-5">
         <h2 className="text-base font-bold text-brand-text">Kateqoriya</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2 md:gap-4">
           <div>
             <label className="mb-2 block text-sm font-semibold text-brand-text">Əsas kateqoriya</label>
             <select
@@ -567,11 +567,11 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
         />
       </section>
 
-      <section className="card-premium space-y-4 rounded-2xl p-5 hover:translate-y-0">
+      <section className="card-premium space-y-4 rounded-xl p-4 hover:translate-y-0 md:rounded-2xl md:p-5">
         <h2 className="text-base font-bold text-brand-text">Şəkillər</h2>
         <p className="text-sm text-brand-muted">Ən azı 1 şəkil tövsiyə olunur. Maksimum {maxListingImages}.</p>
 
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 md:grid-cols-4 md:gap-3">
           {images.map((img, index) => (
             <div key={img.id} className="relative aspect-[4/3] overflow-hidden rounded-xl border border-brand-border bg-brand-surface">
               <ListingImage
@@ -622,7 +622,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
         />
       </section>
 
-      <section className="card-premium space-y-4 rounded-2xl p-5 hover:translate-y-0">
+      <section className="card-premium space-y-4 rounded-xl p-4 hover:translate-y-0 md:rounded-2xl md:p-5">
         <h2 className="text-base font-bold text-brand-text">Elan məlumatları</h2>
 
         <div>
@@ -632,11 +632,11 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="Məs: Samsung paltaryuyan maşın"
-            className="w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-3 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15"
+            className="w-full rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3"
           />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 md:grid-cols-2 md:gap-4">
           <div>
             <label className="mb-2 block text-sm font-semibold text-brand-text">Qiymət (AZN)</label>
             <input
@@ -646,7 +646,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="450"
-              className="w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-3 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15"
+              className="w-full rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3"
             />
           </div>
           <div>
@@ -654,7 +654,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
             <select
               value={city}
               onChange={(e) => setCity(e.target.value)}
-              className="w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-3 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15"
+              className="w-full rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3"
             >
               <option value="">Seçin</option>
               {AZERBAIJAN_CITY_OPTIONS.map((option) => (
@@ -673,7 +673,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
             placeholder="Məhsul haqqında ətraflı məlumat..."
-            className="w-full resize-y rounded-xl border border-brand-border bg-brand-surface px-4 py-3 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15"
+            className="w-full resize-y rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3"
           />
         </div>
 
@@ -683,13 +683,13 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
             type="tel"
             value={contactPhone}
             onChange={(e) => setContactPhone(e.target.value)}
-            placeholder="050 123 45 67"
-            className="w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-3 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15"
+            placeholder="050 XXX XX XX"
+            className="w-full rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3"
           />
         </div>
       </section>
 
-      <section className="card-premium space-y-3 rounded-2xl p-5 hover:translate-y-0">
+      <section className="card-premium space-y-3 rounded-xl p-4 hover:translate-y-0 md:rounded-2xl md:p-5">
         <label className="flex cursor-pointer items-center justify-between gap-4">
           <span>
             <span className="block text-sm font-semibold text-brand-text">Vəziyyət: {isNew ? "Yeni" : "İşlənmiş"}</span>
@@ -730,11 +730,11 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
         </label>
       </section>
 
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
         <p className="text-xs text-brand-muted">
           Elan moderator yoxlanışından keçdikdən sonra saytda görünəcək.
         </p>
-        <div className="flex flex-col items-stretch gap-3 sm:items-end">
+        <div className="flex flex-col items-stretch gap-3 md:items-end">
           {turnstileEnabled ? (
             <TurnstileWidget
               onToken={setCaptchaToken}
@@ -743,7 +743,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
             />
           ) : null}
           {uploadProgressItems.length > 0 ? (
-            <div className="w-full min-w-0 rounded-xl border border-brand-border bg-brand-surface p-3 text-left sm:w-80">
+            <div className="w-full min-w-0 rounded-xl border border-brand-border bg-brand-surface p-3 text-left md:w-80">
               <div className="mb-2 flex items-center justify-between gap-3 text-xs font-semibold text-brand-text">
                 <span>Şəkillər yüklənir</span>
                 <span>{uploadProgressPercent}%</span>

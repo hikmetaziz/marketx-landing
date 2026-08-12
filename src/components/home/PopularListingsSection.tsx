@@ -9,9 +9,9 @@ export async function PopularListingsSection() {
   const hasLiveListings = liveListings.length > 0;
 
   return (
-    <section className="pb-12 sm:pb-14" aria-labelledby="popular-listings-heading">
+    <section className="pb-9 md:pb-14" aria-labelledby="popular-listings-heading">
       <div className="mx-auto max-w-[1180px] px-4 sm:px-6 lg:px-0">
-        <div className="mb-5 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div className="mb-4 flex items-center justify-between gap-3 md:mb-5 md:items-end">
           <h2
             id="popular-listings-heading"
             className="text-2xl font-extrabold text-brand-text sm:text-3xl"
@@ -20,7 +20,7 @@ export async function PopularListingsSection() {
           </h2>
           <Link
             href="/elanlar"
-            className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-semibold text-brand-primary-dark transition-colors hover:bg-brand-primary-light/40 hover:text-brand-primary"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1 text-sm font-semibold text-brand-primary-dark transition-colors hover:bg-brand-primary-light/40 hover:text-brand-primary"
           >
             Hamısına bax
             <ArrowRight className="h-4 w-4" />
@@ -28,9 +28,9 @@ export async function PopularListingsSection() {
         </div>
 
         {hasLiveListings ? (
-          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 md:gap-4 lg:grid-cols-4">
             {liveListings.map((listing) => (
-              <LiveListingCard key={listing.id} listing={listing} />
+              <LiveListingCard key={listing.id} listing={listing} mobileCompact />
             ))}
           </div>
         ) : (

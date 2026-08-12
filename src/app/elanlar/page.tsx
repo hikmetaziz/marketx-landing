@@ -77,7 +77,7 @@ export default async function ElanlarPage({ searchParams }: Props) {
 
   return (
     <PageShell title="Elanlar" subtitle={subtitle} wide>
-      <div className="space-y-6">
+      <div className="space-y-4 md:space-y-6">
         <ListingSearchForm
           key={JSON.stringify(filters)}
           filters={filters}
@@ -87,9 +87,9 @@ export default async function ElanlarPage({ searchParams }: Props) {
 
         {visibleListings.length > 0 ? (
           <>
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 md:gap-4 lg:grid-cols-4">
               {visibleListings.map((listing) => (
-                <LiveListingCard key={listing.id} listing={listing} />
+                <LiveListingCard key={listing.id} listing={listing} mobileCompact />
               ))}
             </div>
             <ListingPagination
@@ -115,9 +115,9 @@ export default async function ElanlarPage({ searchParams }: Props) {
             <p className="text-sm text-brand-muted">
               Canlı elanlar hələ yoxdur. Aşağıda nümunə (satılmış) elanlar göstərilir.
             </p>
-            <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-2.5 md:gap-4 lg:grid-cols-4">
               {(samplePage?.listings ?? POPULAR_LISTINGS).map((listing) => (
-                <SampleListingCard key={listing.id} listing={listing} />
+                <SampleListingCard key={listing.id} listing={listing} mobileCompact />
               ))}
             </div>
             {samplePage ? (

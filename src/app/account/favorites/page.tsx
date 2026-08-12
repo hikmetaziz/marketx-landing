@@ -32,13 +32,13 @@ export default async function AccountFavoritesPage() {
     <PageShell wide title="Seçilmişlər" subtitle="Bəyəndiyiniz elanları burada izləyə bilərsiniz.">
       <AccountSubnav active="favorites" />
       {listings.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2.5 md:gap-4 lg:grid-cols-4">
           {listings.map((listing) => (
-            <LiveListingCard key={listing.id} listing={listing} />
+            <LiveListingCard key={listing.id} listing={listing} mobileCompact />
           ))}
         </div>
       ) : (
-        <div className="rounded-lg border border-brand-border bg-white p-8 text-center">
+        <div className="rounded-lg border border-brand-border bg-white p-5 text-center md:p-8">
           <p className="text-sm text-brand-muted">Hələ seçilmiş elanınız yoxdur.</p>
         </div>
       )}

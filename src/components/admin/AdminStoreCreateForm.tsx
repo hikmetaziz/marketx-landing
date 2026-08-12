@@ -79,11 +79,11 @@ export function AdminStoreCreateForm() {
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm font-semibold text-brand-text">Əlaqə telefonu</span>
-          <input name="contactPhone" maxLength={30} className={inputClass} placeholder="+994 50 000 00 00" />
+          <input name="contactPhone" maxLength={30} className={inputClass} placeholder="+994 50 XXX XX XX" />
         </label>
         <label className="block">
           <span className="mb-1.5 block text-sm font-semibold text-brand-text">WhatsApp</span>
-          <input name="whatsappPhone" maxLength={30} className={inputClass} placeholder="+994 50 000 00 00" />
+          <input name="whatsappPhone" maxLength={30} className={inputClass} placeholder="+994 50 XXX XX XX" />
         </label>
         <label className="block sm:col-span-2">
           <span className="mb-1.5 block text-sm font-semibold text-brand-text">Ünvan</span>

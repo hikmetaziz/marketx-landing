@@ -14,6 +14,14 @@ export type PublicStoreSummary = PublicStoreProfile & {
   active_listing_count: number;
 };
 
+export type PaginatedStoreListings = {
+  listings: LiveListing[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
 const STORE_SELECT =
   "id, store_code, name, slug, description, category, category_id, contact_phone, whatsapp_phone, address, city, map_url, logo_url, cover_url, owner_id, status, created_by, created_at, updated_at";
 
@@ -22,6 +30,8 @@ const PUBLIC_STORE_SELECT =
 
 const STORE_LISTING_SELECT =
   "id, user_id, slug, title, description, price, category, city, condition, status, image_url, image_urls, delivery_available, view_count, created_at, updated_at";
+
+const STORE_LISTING_PAGE_SIZE = 24;
 
 async function getClient() {
   if (!isSupabaseConfigured()) {
@@ -32,6 +42,49 @@ async function getClient() {
   } catch {
     return null;
   }
+}
+
+function getStoreListingPagination(page = 1, limit = STORE_LISTING_PAGE_SIZE) {
+  const safePage = Number.isFinite(page) ? Math.max(1, Math.round(page)) : 1;
+  const safeLimit = Number.isFinite(limit) ? Math.max(1, Math.round(limit)) : STORE_LISTING_PAGE_SIZE;
+  const from = (safePage - 1) * safeLimit;
+  const to = from + safeLimit - 1;
+
+  return { page: safePage, limit: safeLimit, from, to };
+}
+
+function emptyStoreListingsPage(page = 1, limit = STORE_LISTING_PAGE_SIZE): PaginatedStoreListings {
+  const pagination = getStoreListingPagination(page, limit);
+  return {
+    listings: [],
+    total: 0,
+    page: pagination.page,
+    limit: pagination.limit,
+    totalPages: 1,
+  };
+}
+
+function mapStoreActiveListingRows(rows: Array<Record<string, unknown>>): LiveListing[] {
+  return rows
+    .filter((row) => row.slug)
+    .map((row) => ({
+      id: row.id as string,
+      user_id: row.user_id as string,
+      slug: row.slug as string,
+      title: row.title as string,
+      description: (row.description as string | null) ?? null,
+      price: Number(row.price),
+      category: row.category as string,
+      city: row.city as string,
+      condition: (row.condition as string | null) ?? null,
+      status: "active" as const,
+      image_url: (row.image_url as string | null) ?? null,
+      image_urls: (row.image_urls as string[] | null) ?? null,
+      delivery_available: (row.delivery_available as boolean | null) ?? null,
+      view_count: Number(row.view_count ?? 0),
+      created_at: row.created_at as string,
+      updated_at: (row.updated_at as string | null) ?? null,
+    }));
 }
 
 // ── Public ──────────────────────────────────────────────────────────────────
@@ -106,39 +159,40 @@ export async function getPublicStoreSlugs(): Promise<Array<{ slug: string; creat
 }
 
 export async function getStoreActiveListings(storeId: string): Promise<LiveListing[]> {
-  const supabase = await getClient();
-  if (!supabase) return [];
+  const page = await getStoreActiveListingsPage(storeId);
+  return page.listings;
+}
 
-  const { data, error } = await supabase
+export async function getStoreActiveListingsPage(
+  storeId: string,
+  options: { page?: number; limit?: number } = {},
+): Promise<PaginatedStoreListings> {
+  const pagination = getStoreListingPagination(options.page, options.limit);
+  const supabase = await getClient();
+  if (!supabase) return emptyStoreListingsPage(pagination.page, pagination.limit);
+
+  const { data, error, count } = await supabase
     .from("listings")
-    .select(STORE_LISTING_SELECT)
+    .select(STORE_LISTING_SELECT, { count: "exact" })
     .eq("store_id", storeId)
     .eq("status", "active")
     .not("slug", "is", null)
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
+    .range(pagination.from, pagination.to);
 
-  if (error || !data) return [];
+  if (error || !data) return emptyStoreListingsPage(pagination.page, pagination.limit);
 
-  return (data as Array<Record<string, unknown>>)
-    .filter((row) => row.slug)
-    .map((row) => ({
-      id: row.id as string,
-      user_id: row.user_id as string,
-      slug: row.slug as string,
-      title: row.title as string,
-      description: (row.description as string | null) ?? null,
-      price: Number(row.price),
-      category: row.category as string,
-      city: row.city as string,
-      condition: (row.condition as string | null) ?? null,
-      status: "active" as const,
-      image_url: (row.image_url as string | null) ?? null,
-      image_urls: (row.image_urls as string[] | null) ?? null,
-      delivery_available: (row.delivery_available as boolean | null) ?? null,
-      view_count: Number(row.view_count ?? 0),
-      created_at: row.created_at as string,
-      updated_at: (row.updated_at as string | null) ?? null,
-    }));
+  const listings = mapStoreActiveListingRows(data as Array<Record<string, unknown>>);
+  const total = count ?? listings.length;
+
+  return {
+    listings,
+    total,
+    page: pagination.page,
+    limit: pagination.limit,
+    totalPages: Math.max(1, Math.ceil(total / pagination.limit)),
+  };
 }
 
 // ── Admin ───────────────────────────────────────────────────────────────────

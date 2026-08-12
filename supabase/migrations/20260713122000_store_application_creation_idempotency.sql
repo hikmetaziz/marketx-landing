@@ -1,4 +1,4 @@
-- MarktX
+-- MarktX
 -- Yeni mağaza support müraciətindən mağaza yaradılması üçün qalıcı idempotency.
 -- Eyni conversation_id üzrə yalnız bir mağaza yaradılır.
 --

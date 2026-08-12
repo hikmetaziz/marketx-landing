@@ -128,7 +128,7 @@ export function parseCreateListingInput(
 
   const contactPhoneRaw = typeof input.contactPhone === "string" ? input.contactPhone : "";
   if (!isValidContactPhone(contactPhoneRaw)) {
-    return { ok: false, error: "Telefon düzgün deyil. Nümunə: 050 123 45 67" };
+    return { ok: false, error: "Telefon düzgün deyil. Nümunə: 050 XXX XX XX" };
   }
   const contactPhone = contactPhoneRaw.trim() ? normalizeContactPhone(contactPhoneRaw) : null;
 

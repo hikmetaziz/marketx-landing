@@ -40,7 +40,7 @@ export default async function CreateListingPage() {
 
     return (
       <PageShell title="Elan yerləşdir" subtitle="Mağaza girişi tələb olunur." wide>
-        <div className="card-premium mx-auto max-w-2xl rounded-2xl p-6 text-center hover:translate-y-0">
+        <div className="card-premium mx-auto max-w-2xl rounded-xl p-4 text-center hover:translate-y-0 md:rounded-2xl md:p-6">
           <p className="text-base font-semibold text-brand-text">
             {hasPendingClaim ? "Mağaza giriş müraciətiniz yoxlanılır." : storeAccess.error}
           </p>
@@ -50,7 +50,7 @@ export default async function CreateListingPage() {
           </p>
           <Link
             href="/account/store/claim"
-            className="btn-primary-premium mt-5 inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white"
+            className="btn-primary-premium mt-5 inline-flex w-full items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white md:w-auto"
           >
             {primaryCtaText}
           </Link>

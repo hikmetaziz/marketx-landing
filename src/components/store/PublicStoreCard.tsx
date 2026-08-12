@@ -1,4 +1,5 @@
 import { ArrowRight, MapPin, Package, Store as StoreIcon } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 import { StorePhoneReveal } from "@/components/store/StorePhoneReveal";
@@ -18,10 +19,15 @@ export function PublicStoreCard({ store }: PublicStoreCardProps) {
   return (
     <article className="group flex h-full flex-col rounded-2xl border border-brand-border/90 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-primary/30 hover:shadow-md">
       <div className="flex items-start gap-3">
-        <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-brand-primary/20 bg-brand-primary-light text-brand-primary">
+        <span className="relative inline-flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-brand-primary/20 bg-brand-primary-light text-brand-primary">
           {store.logo_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={store.logo_url} alt={`${store.name} logo`} className="h-full w-full object-contain bg-white" />
+            <Image
+              src={store.logo_url}
+              alt={`${store.name} logo`}
+              fill
+              sizes="48px"
+              className="bg-white object-contain"
+            />
           ) : (
             <StoreIcon className="h-5 w-5" aria-hidden />
           )}

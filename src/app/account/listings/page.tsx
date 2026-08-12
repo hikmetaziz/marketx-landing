@@ -36,10 +36,10 @@ export default async function MyListingsPage() {
       subtitle="Elanlarınızın statusunu izləyin. Düzəliş edə, silə və ya satıldı edə bilərsiniz."
     >
       <AccountSubnav active="listings" />
-      <div className="mb-6">
+      <div className="mb-5 md:mb-6">
         <Link
           href="/elan-yarat"
-          className="btn-primary-premium inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white"
+          className="btn-primary-premium inline-flex w-full items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white md:w-auto"
         >
           Yeni elan
         </Link>

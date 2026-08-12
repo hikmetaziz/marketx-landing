@@ -16,6 +16,7 @@ const TITLE_MAX = 120;
 const DESCRIPTION_MAX = 5000;
 const PRICE_MIN = 1;
 const PRICE_MAX = 9_999_999;
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
 type PendingListingUpdateInput = {
   title: string;
@@ -24,6 +25,46 @@ type PendingListingUpdateInput = {
   condition: string;
   description: string;
 };
+
+async function notifyListingWebPush(
+  supabase: SupabaseServerClient,
+  listingId: string,
+  status: ListingStatus,
+): Promise<void> {
+  const event =
+    status === "active"
+      ? "listing_approved"
+      : status === "rejected"
+        ? "listing_rejected"
+        : null;
+
+  if (!event) {
+    return;
+  }
+
+  try {
+    const { error } = await supabase.functions.invoke("send-web-push", {
+      body: {
+        event,
+        listing_id: listingId,
+      },
+    });
+
+    if (error) {
+      console.warn("Listing web push failed", {
+        listingId,
+        event,
+        message: error.message,
+      });
+    }
+  } catch (pushError) {
+    console.warn("Listing web push failed", {
+      listingId,
+      event,
+      error: pushError,
+    });
+  }
+}
 
 async function updateListingStatus(
   listingId: string,
@@ -57,6 +98,8 @@ async function updateListingStatus(
     revalidatePath(`/elanlar/${listing.slug}`);
     revalidatePath(`/categories/${dbCategoryToSlug(listing.category)}`);
   }
+
+  await notifyListingWebPush(supabase, listingId, status);
 
   return { ok: true };
 }

@@ -73,11 +73,11 @@ function splitStructuredDescription(description: string | null): {
 
 function ListingDetailTwoColumnRows({ rows }: { rows: FactRow[] }) {
   return (
-    <dl className="grid overflow-hidden rounded-xl border border-brand-border/80 bg-brand-surface/50 sm:grid-cols-2">
+    <dl className="grid overflow-hidden rounded-xl border border-brand-border/80 bg-brand-surface/50 md:grid-cols-2">
       {rows.map(({ label, value }) => (
         <div
           key={label}
-          className="min-w-0 border-b border-brand-border/60 px-4 py-3 last:border-b-0 sm:[&:nth-last-child(-n+2)]:border-b-0 sm:odd:border-r sm:odd:border-brand-border/60"
+          className="min-w-0 border-b border-brand-border/60 px-3 py-2.5 last:border-b-0 md:px-4 md:py-3 md:[&:nth-last-child(-n+2)]:border-b-0 md:odd:border-r md:odd:border-brand-border/60"
         >
           <dt className="text-xs font-semibold text-brand-muted">{label}</dt>
           <dd className="mt-1 break-words text-sm font-extrabold leading-snug text-brand-text">{value}</dd>
@@ -154,9 +154,12 @@ export function ListingDetailFacts({ rows }: { rows: FactRow[] }) {
   return (
     <dl className="divide-y divide-brand-border/60 overflow-hidden rounded-xl border border-brand-border/80 bg-brand-surface/50">
       {rows.map(({ label, value }) => (
-        <div key={label} className="flex items-center justify-between gap-4 px-4 py-3 text-sm">
+        <div
+          key={label}
+          className="flex flex-col items-start gap-1 px-3 py-2.5 text-sm min-[390px]:flex-row min-[390px]:items-center min-[390px]:justify-between min-[390px]:gap-3 md:px-4 md:py-3"
+        >
           <dt className="shrink-0 text-brand-muted">{label}</dt>
-          <dd className="text-right font-semibold text-brand-text">{value}</dd>
+          <dd className="min-w-0 break-words text-left font-semibold text-brand-text min-[390px]:text-right">{value}</dd>
         </div>
       ))}
     </dl>

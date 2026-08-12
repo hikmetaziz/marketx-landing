@@ -37,7 +37,7 @@ const WORK_DAYS = [
 ] as const;
 
 const inputClass =
-  "w-full rounded-xl border border-brand-border bg-white px-3.5 py-3 text-sm text-brand-text placeholder:text-brand-muted/70 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20";
+  "w-full rounded-xl border border-brand-border bg-white px-3.5 py-2.5 text-sm text-brand-text placeholder:text-brand-muted/70 focus:border-brand-primary focus:outline-none focus:ring-2 focus:ring-brand-primary/20 md:py-3";
 
 type ApplicationState = {
   name: string;
@@ -139,7 +139,7 @@ export function NewStoreApplicationForm() {
     }
     if (targetStep === 3) {
       if (!normalizeAzPhone(form.phone)) {
-        return "Telefon nömrəsini tam daxil edin. Məsələn: 051 471 11 18.";
+        return "Telefon nömrəsini tam daxil edin. Məsələn: 051 XXX XX XX.";
       }
       if (form.whatsapp.trim() && !normalizeAzPhone(form.whatsapp)) {
         return "WhatsApp nömrəsini düzgün daxil edin.";
@@ -286,12 +286,12 @@ export function NewStoreApplicationForm() {
   };
 
   return (
-    <div className="mx-auto max-w-3xl rounded-xl border border-brand-border bg-white p-5 shadow-sm sm:p-6">
-      <div className="mb-6 flex items-center justify-between gap-3">
+    <div className="mx-auto max-w-3xl rounded-xl border border-brand-border bg-white p-4 shadow-sm md:p-6">
+      <div className="mb-5 flex items-center justify-between gap-2 md:mb-6 md:gap-3">
         {[1, 2, 3].map((item) => (
           <div key={item} className="flex flex-1 items-center gap-2">
             <span
-              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+              className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold md:h-8 md:w-8 md:text-sm ${
                 item <= step ? "bg-brand-primary text-white" : "bg-brand-surface text-brand-muted"
               }`}
             >
@@ -311,8 +311,8 @@ export function NewStoreApplicationForm() {
       ) : null}
 
       {step === 1 ? (
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block sm:col-span-2">
+        <div className="grid gap-3 md:grid-cols-2 md:gap-4">
+          <label className="block md:col-span-2">
             <span className="mb-1.5 block text-sm font-semibold text-brand-text">Mağaza adı *</span>
             <input value={form.name} onChange={(event) => update("name", event.target.value)} maxLength={80} className={inputClass} />
           </label>
@@ -330,7 +330,7 @@ export function NewStoreApplicationForm() {
               {AZERBAIJAN_CITY_OPTIONS.map((city) => <option key={city.slug} value={city.value}>{city.label}</option>)}
             </select>
           </label>
-          <label className="block sm:col-span-2">
+          <label className="block md:col-span-2">
             <span className="mb-1.5 block text-sm font-semibold text-brand-text">Təsvir *</span>
             <textarea value={form.description} onChange={(event) => update("description", event.target.value)} rows={4} maxLength={160} className={inputClass} />
           </label>
@@ -352,7 +352,7 @@ export function NewStoreApplicationForm() {
       ) : null}
 
       {step === 2 ? (
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold text-brand-text">Ünvan *</span>
             <input value={form.address} onChange={(event) => update("address", event.target.value)} maxLength={120} className={inputClass} />
@@ -377,7 +377,7 @@ export function NewStoreApplicationForm() {
               })}
             </div>
           </fieldset>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-3 md:grid-cols-2 md:gap-4">
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold text-brand-text">Açılış vaxtı *</span>
               <input type="time" value={form.openingTime} onChange={(event) => update("openingTime", event.target.value)} className={inputClass} />
@@ -391,20 +391,20 @@ export function NewStoreApplicationForm() {
       ) : null}
 
       {step === 3 ? (
-        <div className="space-y-4">
+        <div className="space-y-3 md:space-y-4">
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold text-brand-text">Telefon *</span>
-            <input value={form.phone} onChange={(event) => update("phone", event.target.value)} maxLength={30} placeholder="051 471 11 18" className={inputClass} />
+            <input value={form.phone} onChange={(event) => update("phone", event.target.value)} maxLength={30} placeholder="051 XXX XX XX" className={inputClass} />
           </label>
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold text-brand-text">WhatsApp</span>
-            <input value={form.whatsapp} onChange={(event) => update("whatsapp", event.target.value)} maxLength={30} placeholder="051 471 11 18" className={inputClass} />
+            <input value={form.whatsapp} onChange={(event) => update("whatsapp", event.target.value)} maxLength={30} placeholder="051 XXX XX XX" className={inputClass} />
           </label>
           <label className="block">
             <span className="mb-1.5 block text-sm font-semibold text-brand-text">E-poçt</span>
             <input type="email" value={form.email} onChange={(event) => update("email", event.target.value)} maxLength={100} className={inputClass} />
           </label>
-          <div className="rounded-xl border border-brand-border bg-brand-surface/40 p-4 text-sm">
+          <div className="rounded-xl border border-brand-border bg-brand-surface/40 p-3.5 text-sm md:p-4">
             <p className="font-bold text-brand-text">{form.name}</p>
             <p className="mt-1 text-brand-muted">{form.category} · {form.city}</p>
             <p className="mt-1 text-brand-muted">{workDayLabels(form.workingDays).join(", ")} · {form.openingTime}–{form.closingTime}</p>
@@ -412,7 +412,7 @@ export function NewStoreApplicationForm() {
         </div>
       ) : null}
 
-      <div className="mt-6 flex items-center justify-between gap-3">
+      <div className="mt-5 flex items-center justify-between gap-2 md:mt-6 md:gap-3">
         <button
           type="button"
           disabled={pending || step === 1}
@@ -420,12 +420,12 @@ export function NewStoreApplicationForm() {
             setError("");
             setStep((current) => Math.max(1, current - 1));
           }}
-          className="rounded-xl border border-brand-border px-4 py-2.5 text-sm font-semibold text-brand-text disabled:invisible"
+          className="rounded-xl border border-brand-border px-3.5 py-2.5 text-sm font-semibold text-brand-text disabled:invisible md:px-4"
         >
           Geri
         </button>
         {step < 3 ? (
-          <button type="button" onClick={next} className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-bold text-white">
+          <button type="button" onClick={next} className="rounded-xl bg-brand-primary px-4 py-2.5 text-sm font-bold text-white md:px-5">
             Davam et
           </button>
         ) : (
@@ -433,7 +433,7 @@ export function NewStoreApplicationForm() {
             type="button"
             disabled={pending}
             onClick={() => void submit()}
-            className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-bold text-white disabled:opacity-60"
+            className="inline-flex items-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-sm font-bold text-white disabled:opacity-60 md:px-5"
           >
             {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
             Müraciəti göndər
@@ -458,7 +458,7 @@ function FileField({
   onChange: (file: File | null) => void;
 }) {
   return (
-    <label className="block rounded-xl border border-dashed border-brand-border p-4">
+    <label className="block rounded-xl border border-dashed border-brand-border p-3.5 md:p-4">
       <span className="flex items-center gap-2 text-sm font-semibold text-brand-text">
         <ImagePlus className="h-4 w-4 text-brand-primary" />
         {label}

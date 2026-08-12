@@ -84,6 +84,8 @@ function patchStore(patch: Partial<AuthStore>) {
   scheduleEmit();
 }
 
+let authUpdateVersion = 0;
+
 function initAuthStore() {
   if (initialized || typeof window === "undefined") {
     return;
@@ -118,16 +120,47 @@ function initAuthStore() {
     });
   };
 
-  supabase.auth.onAuthStateChange((event, session) => {
-    if (
-      event !== "INITIAL_SESSION" &&
-      event !== "SIGNED_IN" &&
-      event !== "SIGNED_OUT" &&
-      event !== "TOKEN_REFRESHED"
-    ) {
+  const hydrateAuthUser = async () => {
+    const version = ++authUpdateVersion;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (version !== authUpdateVersion) {
       return;
     }
 
+    const nextUser = toAuthenticatedUser(user);
+    const userChanged =
+      store.user?.id !== nextUser?.id || store.user?.email !== nextUser?.email;
+
+    if (userChanged) {
+      patchStore({
+        user: nextUser,
+        role: nextUser ? store.role : null,
+        isAdmin: nextUser ? store.isAdmin : false,
+        canAccessSupportPanel: nextUser ? store.canAccessSupportPanel : false,
+      });
+    }
+
+    if (nextUser) {
+      void loadProfile(nextUser.id);
+    } else {
+      profileUserId = null;
+      patchStore({ role: null, isAdmin: false, canAccessSupportPanel: false });
+    }
+
+    patchStore({ loading: false });
+  };
+
+  void hydrateAuthUser();
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "TOKEN_REFRESHED") {
+      return;
+    }
+
+    ++authUpdateVersion;
     const nextUser = toAuthenticatedUser(session?.user);
     const userChanged =
       store.user?.id !== nextUser?.id || store.user?.email !== nextUser?.email;
@@ -148,10 +181,6 @@ function initAuthStore() {
     } else {
       profileUserId = null;
       patchStore({ role: null, isAdmin: false, canAccessSupportPanel: false });
-    }
-
-    if (event === "INITIAL_SESSION") {
-      patchStore({ loading: false });
     }
   });
 }

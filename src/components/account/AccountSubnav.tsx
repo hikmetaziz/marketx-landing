@@ -3,6 +3,7 @@
 import { ClipboardList, Headset, Heart, LogOut, MessageCircle, Store, User } from "lucide-react";
 import Link from "next/link";
 
+import { signOutWithCleanup } from "@/lib/auth/sign-out";
 import { useAuthUser } from "@/lib/supabase/use-auth-user";
 
 type AccountSubnavProps = {
@@ -18,7 +19,7 @@ export function AccountSubnav({ active }: AccountSubnavProps) {
     "Profil";
 
   const linkClass = (key: AccountSubnavProps["active"]) =>
-    `inline-flex min-h-10 items-center gap-2 rounded-lg border px-3.5 py-2 text-sm font-semibold transition-colors ${
+    `inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors md:min-h-10 md:px-3.5 md:py-2 md:text-sm ${
       active === key
         ? "border-brand-primary/30 bg-brand-primary-light/40 text-brand-primary"
         : "border-brand-border bg-white text-brand-text hover:border-brand-primary/30 hover:text-brand-primary"
@@ -26,13 +27,13 @@ export function AccountSubnav({ active }: AccountSubnavProps) {
 
   const handleSignOut = async () => {
     if (!supabase) return;
-    await supabase.auth.signOut({ scope: "local" });
+    await signOutWithCleanup(supabase);
     window.location.href = "/";
   };
 
   return (
-    <div className="mb-6 space-y-3">
-      <div className="flex min-h-14 flex-wrap items-center justify-between gap-3 rounded-lg border border-brand-border bg-white px-4 py-3">
+    <div className="mb-5 space-y-3 md:mb-6">
+      <div className="flex min-h-12 flex-wrap items-center justify-between gap-3 rounded-lg border border-brand-border bg-white px-3 py-2.5 md:min-h-14 md:px-4 md:py-3">
         <div className="inline-flex min-w-0 items-center gap-2.5">
           <span className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-primary-light/50 text-brand-primary">
             <User className="h-4.5 w-4.5" aria-hidden="true" />
@@ -45,14 +46,17 @@ export function AccountSubnav({ active }: AccountSubnavProps) {
           type="button"
           onClick={handleSignOut}
           disabled={!supabase}
-          className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-brand-border bg-white px-3.5 text-sm font-semibold text-brand-text transition-colors hover:border-brand-primary/30 hover:text-brand-primary disabled:cursor-not-allowed disabled:opacity-50"
+          className="inline-flex min-h-9 items-center gap-2 rounded-lg border border-brand-border bg-white px-3 text-xs font-semibold text-brand-text transition-colors hover:border-brand-primary/30 hover:text-brand-primary disabled:cursor-not-allowed disabled:opacity-50 md:min-h-10 md:px-3.5 md:text-sm"
         >
           <LogOut className="h-4 w-4" aria-hidden="true" />
           Çıxış
         </button>
       </div>
 
-      <nav className="flex flex-wrap gap-2" aria-label="Kabinet naviqasiyası">
+      <nav
+        className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] md:flex-wrap md:pb-0 [&::-webkit-scrollbar]:hidden"
+        aria-label="Kabinet naviqasiyası"
+      >
         <Link href="/account/favorites" className={linkClass("favorites")}>
           <Heart className="h-4 w-4" aria-hidden="true" />
           Seçilmişlər

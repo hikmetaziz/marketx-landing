@@ -33,22 +33,22 @@ export function StoreOnboardingChoices({ claimState = "available" }: { claimStat
   );
 
   return (
-    <div className="mx-auto mb-6 grid max-w-3xl gap-3 sm:grid-cols-2">
+    <div className="mx-auto mb-5 grid max-w-3xl gap-3 md:mb-6 md:grid-cols-2">
       {claim.href ? (
         <Link
           href={claim.href}
-          className="flex min-h-24 items-center gap-3 rounded-xl border border-brand-primary/35 bg-brand-primary-light/40 p-4 transition-colors hover:border-brand-primary"
+          className="flex min-h-20 items-center gap-3 rounded-xl border border-brand-primary/35 bg-brand-primary-light/40 p-3.5 transition-colors hover:border-brand-primary md:min-h-24 md:p-4"
         >
           {claimContent}
         </Link>
       ) : (
-        <div className="flex min-h-24 items-center gap-3 rounded-xl border border-brand-border bg-brand-surface/50 p-4">
+        <div className="flex min-h-20 items-center gap-3 rounded-xl border border-brand-border bg-brand-surface/50 p-3.5 md:min-h-24 md:p-4">
           {claimContent}
         </div>
       )}
       <Link
         href="/account/store/apply"
-        className="flex min-h-24 items-center gap-3 rounded-xl border border-brand-border bg-white p-4 transition-colors hover:border-brand-primary/50"
+        className="flex min-h-20 items-center gap-3 rounded-xl border border-brand-border bg-white p-3.5 transition-colors hover:border-brand-primary/50 md:min-h-24 md:p-4"
       >
         <Store className="h-6 w-6 shrink-0 text-brand-primary" />
         <span>

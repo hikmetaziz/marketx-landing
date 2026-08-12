@@ -64,7 +64,7 @@ type FilterFormState = {
 };
 
 const fieldClass =
-  "h-11 w-full rounded-lg border border-brand-border bg-white px-3 text-sm text-brand-text outline-none transition-colors focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15";
+  "h-10 w-full rounded-lg border border-brand-border bg-white px-3 text-sm text-brand-text outline-none transition-colors focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:h-11";
 
 function filtersToFormState(filters: ListingSearchFilters): FilterFormState {
   return {
@@ -183,14 +183,14 @@ export function ListingSearchForm({ filters, categoryOptions, subcategoryOptions
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-xl border border-brand-border/90 bg-brand-surface/55 p-3 sm:p-4"
+      className="rounded-xl border border-brand-border/90 bg-brand-surface/55 p-2.5 md:p-4"
     >
-      <div className="mb-3 flex items-center gap-2 text-sm font-bold text-brand-text">
+      <div className="mb-2.5 flex items-center gap-2 text-sm font-bold text-brand-text md:mb-3">
         <SlidersHorizontal className="h-4 w-4 text-brand-primary" />
         Axtarış və filtrlər
       </div>
 
-      <div className="grid gap-2.5 md:grid-cols-2 lg:grid-cols-[minmax(220px,1.6fr)_1fr_1fr_0.9fr_0.8fr_0.8fr_0.9fr_auto]">
+      <div className="grid gap-2 md:grid-cols-2 md:gap-2.5 lg:grid-cols-[minmax(220px,1.6fr)_1fr_1fr_0.9fr_0.8fr_0.8fr_0.9fr_auto]">
         <label className="relative block md:col-span-2 lg:col-span-1">
           <span className="sr-only">Axtarış sözü</span>
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-brand-muted" />
@@ -322,7 +322,7 @@ export function ListingSearchForm({ filters, categoryOptions, subcategoryOptions
           <button
             type="submit"
             disabled={isPending}
-            className="inline-flex h-11 flex-1 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-sm font-bold text-white transition-colors hover:bg-brand-primary-dark disabled:opacity-70 lg:flex-none"
+            className="inline-flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-brand-primary px-4 text-sm font-bold text-white transition-colors hover:bg-brand-primary-dark disabled:opacity-70 md:h-11 lg:flex-none"
           >
             <Search className="h-4 w-4" />
             Axtar
@@ -332,7 +332,7 @@ export function ListingSearchForm({ filters, categoryOptions, subcategoryOptions
               type="button"
               onClick={clearFilters}
               aria-label="Filtrləri təmizlə"
-              className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-brand-border bg-white text-brand-muted transition-colors hover:border-brand-primary/40 hover:text-brand-text"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-border bg-white text-brand-muted transition-colors hover:border-brand-primary/40 hover:text-brand-text md:h-11 md:w-11"
             >
               <X className="h-4 w-4" />
             </button>

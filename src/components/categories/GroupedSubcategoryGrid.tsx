@@ -11,7 +11,7 @@ type GroupedSubcategoryGridProps = {
 
 function linkClass(active: boolean): string {
   return [
-    "block rounded-md border px-3 py-2 text-sm font-semibold transition-colors",
+    "block rounded-md border px-2.5 py-2 text-sm font-semibold leading-snug transition-colors md:px-3",
     active
       ? "border-brand-primary bg-brand-primary/10 text-brand-primary"
       : "border-brand-border/80 bg-white text-brand-text hover:border-brand-primary/40 hover:text-brand-primary",
@@ -31,18 +31,18 @@ export function GroupedSubcategoryGrid({
   const basePath = `/categories/${categorySlug}`;
 
   return (
-    <nav aria-label="Alt kateqoriyalar" className="mb-6 space-y-4">
+    <nav aria-label="Alt kateqoriyalar" className="mb-5 space-y-3 md:mb-6 md:space-y-4">
       <div className="flex flex-wrap gap-2">
         <Link href={basePath} className={linkClass(!activeSubSlug)}>
           Hamısı
         </Link>
       </div>
-      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-2.5 md:grid-cols-2 md:gap-3 xl:grid-cols-3">
         {groups.map((group) => (
           <section
             key={group.key}
             aria-labelledby={`${group.key}-title`}
-            className="rounded-lg border border-brand-border/90 bg-brand-surface/55 p-3"
+            className="rounded-lg border border-brand-border/90 bg-brand-surface/55 p-2.5 md:p-3"
           >
             <h2 id={`${group.key}-title`} className="mb-2 text-sm font-bold text-brand-text">
               {group.label}

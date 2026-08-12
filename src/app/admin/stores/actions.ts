@@ -83,6 +83,36 @@ type StoreApplicationImageUrls = {
   coverUrl: string | null;
 };
 
+async function notifyStoreApplicationActivationCodeReady(
+  supabase: SupabaseServerClient,
+  conversationId: string,
+): Promise<void> {
+  for (const functionName of ["send-push", "send-web-push"]) {
+    try {
+      const { error } = await supabase.functions.invoke(functionName, {
+        body: {
+          event: "activation_code_ready",
+          conversation_id: conversationId,
+        },
+      });
+
+      if (error) {
+        console.error("Store application activation push failed", {
+          conversationId,
+          functionName,
+          message: error.message,
+        });
+      }
+    } catch (pushError) {
+      console.error("Store application activation push failed", {
+        conversationId,
+        functionName,
+        error: pushError,
+      });
+    }
+  }
+}
+
 function readStoreApplicationImageUrl(line: string, label: string): string | null {
   if (!line.startsWith(label)) {
     return null;
@@ -637,6 +667,12 @@ export async function adminApproveStoreApplication(
       },
     };
   }
+
+  const supabase = await createClient();
+  await notifyStoreApplicationActivationCodeReady(
+    supabase,
+    conversationId,
+  );
 
   revalidatePath("/admin/support");
   revalidatePath(`/admin/stores/${storeResult.storeId}`);

@@ -31,6 +31,31 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+@media (max-width: 767px) {
+  html,
+  body {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    display: none;
+  }
+
+  body {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  body[data-marktx-pwa-install-bar="visible"] {
+    padding-bottom: calc(148px + env(safe-area-inset-bottom));
+  }
+
+  body[data-marktx-pwa-standalone="true"] .marktx-mobile-header {
+    padding-top: env(safe-area-inset-top);
+  }
+}
+
 .home-premium-bg {
   background:
     radial-gradient(ellipse 80% 50% at 50% -20%, rgba(37, 99, 235, 0.07), transparent 70%),

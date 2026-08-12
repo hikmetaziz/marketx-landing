@@ -78,7 +78,7 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
 
   if (listings.length === 0) {
     return (
-      <div className="rounded-2xl border border-brand-border/90 bg-brand-surface/60 p-8 text-center">
+      <div className="rounded-xl border border-brand-border/90 bg-brand-surface/60 p-5 text-center md:rounded-2xl md:p-8">
         <p className="text-sm text-brand-muted">Hələ elan yaratmamısınız.</p>
         <Link
           href="/elan-yarat"
@@ -91,14 +91,14 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4">
       {errorMessage ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {errorMessage}
         </div>
       ) : null}
 
-      <ul className="space-y-4">
+      <ul className="space-y-3 md:space-y-4">
         {listings.map((listing) => {
           const primaryImage = getPrimaryListingImage(listing);
           const publicHref = getPublicListingHref(listing);
@@ -108,10 +108,10 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
           return (
             <li
               key={listing.id}
-              className="card-premium overflow-hidden rounded-2xl hover:translate-y-0"
+              className="card-premium overflow-hidden rounded-xl hover:translate-y-0 md:rounded-2xl"
             >
-              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start">
-                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-brand-surface sm:w-36">
+              <div className="flex flex-col gap-3 p-3 md:flex-row md:items-start md:gap-4 md:p-4">
+                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-brand-surface md:w-36">
                   {primaryImage ? (
                     <ListingImage
                       src={primaryImage}
@@ -137,8 +137,8 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
                     <span className="text-xs text-brand-muted">{formatListingRelativeDate(listing.created_at)}</span>
                   </div>
 
-                  <h2 className="text-lg font-bold text-brand-text">{listing.title}</h2>
-                  <p className="text-lg font-extrabold text-brand-primary">{formatListingPrice(listing.price)}</p>
+                  <h2 className="text-base font-bold text-brand-text md:text-lg">{listing.title}</h2>
+                  <p className="text-base font-extrabold text-brand-primary md:text-lg">{formatListingPrice(listing.price)}</p>
 
                   <p className="text-sm text-brand-muted">
                     {dbCategoryToDisplay(listing.category)} · {listing.city}

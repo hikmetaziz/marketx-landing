@@ -17,9 +17,9 @@ export default async function CategoriesPage() {
 
   return (
     <PageShell wide title="Kateqoriyalar" subtitle="Kateqoriya üzrə elanları kəşf edin.">
-      <div className="grid gap-3.5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid grid-cols-3 gap-2.5 md:gap-3.5 lg:grid-cols-4 xl:grid-cols-5">
         {catalogue.map((entry) => (
-          <CategoryCatalogueTile key={entry.slug} entry={entry} />
+          <CategoryCatalogueTile key={entry.slug} entry={entry} mobileCompact />
         ))}
       </div>
     </PageShell>

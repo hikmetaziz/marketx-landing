@@ -323,7 +323,7 @@ export function AdminStoreDetailPanel({
             <input
               value={ownerPhone}
               onChange={(event) => setOwnerPhone(event.target.value)}
-              placeholder="051 471 11 18"
+              placeholder="051 XXX XX XX"
               className={inputClass}
             />
           </label>

@@ -5,7 +5,7 @@ import { GroupedSubcategoryGrid } from "@/components/categories/GroupedSubcatego
 import { LiveListingCard } from "@/components/listings/LiveListingCard";
 import { PageShell } from "@/components/layout/PageShell";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { getListingsByCategorySlug } from "@/lib/listings/live-listings";
+import { getListingsByCategorySlug, getListingsByCategorySlugPage } from "@/lib/listings/live-listings";
 import { createPageMetadata } from "@/lib/seo";
 import { getBreadcrumbJsonLd } from "@/lib/seo-assets";
 import { getCatalogueEntryBySlug, getCatalogueSlugs } from "@/lib/taxonomy/fetch-catalogue";
@@ -13,7 +13,7 @@ import { getSubcategoriesByCategorySlug, getSubcategoryBySlug } from "@/lib/taxo
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ sub?: string }>;
+  searchParams: Promise<{ sub?: string | string[]; page?: string | string[] }>;
 };
 
 export async function generateStaticParams() {
@@ -23,9 +23,130 @@ export async function generateStaticParams() {
 
 export const dynamicParams = true;
 
+function firstParam(value: string | string[] | undefined): string {
+  return Array.isArray(value) ? value[0] ?? "" : value ?? "";
+}
+
+function parsePageParam(value: string | string[] | undefined): number {
+  const page = Number(firstParam(value).trim());
+  if (!Number.isFinite(page)) {
+    return 1;
+  }
+
+  return Math.max(1, Math.round(page));
+}
+
+function categoryPageHref(categorySlug: string, subcategorySlug: string | null | undefined, page: number): string {
+  const params = new URLSearchParams();
+  if (subcategorySlug) {
+    params.set("sub", subcategorySlug);
+  }
+  if (page > 1) {
+    params.set("page", String(page));
+  }
+
+  const query = params.toString();
+  return query ? `/categories/${categorySlug}?${query}` : `/categories/${categorySlug}`;
+}
+
+function CategoryPagination({
+  categorySlug,
+  subcategorySlug,
+  page,
+  limit,
+  total,
+  totalPages,
+}: {
+  categorySlug: string;
+  subcategorySlug?: string | null;
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}) {
+  if (totalPages <= 1) {
+    return null;
+  }
+
+  const currentPage = Math.min(page, totalPages);
+  const start = Math.max(1, currentPage - 2);
+  const end = Math.min(totalPages, currentPage + 2);
+  const pages = Array.from({ length: end - start + 1 }, (_, index) => start + index);
+  const from = (currentPage - 1) * limit + 1;
+  const to = Math.min(currentPage * limit, total);
+  const linkClass =
+    "inline-flex h-10 min-w-10 items-center justify-center rounded-lg border border-brand-border bg-white px-3 text-sm font-semibold text-brand-text transition-colors hover:border-brand-primary/40 hover:text-brand-primary";
+  const activeClass =
+    "inline-flex h-10 min-w-10 items-center justify-center rounded-lg bg-brand-primary px-3 text-sm font-bold text-white";
+  const disabledClass =
+    "inline-flex h-10 min-w-10 cursor-not-allowed items-center justify-center rounded-lg border border-brand-border bg-brand-surface px-3 text-sm font-semibold text-brand-muted";
+
+  return (
+    <nav
+      className="flex flex-col gap-3 border-t border-brand-border/70 pt-5 sm:flex-row sm:items-center sm:justify-between"
+      aria-label="Kateqoriya elan səhifələri"
+    >
+      <p className="text-sm text-brand-muted">
+        {from}-{to} / {total} elan
+      </p>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {currentPage > 1 ? (
+          <Link href={categoryPageHref(categorySlug, subcategorySlug, currentPage - 1)} className={linkClass}>
+            Əvvəlki
+          </Link>
+        ) : (
+          <span className={disabledClass}>Əvvəlki</span>
+        )}
+
+        {pages[0] > 1 ? (
+          <>
+            <Link href={categoryPageHref(categorySlug, subcategorySlug, 1)} className={linkClass}>
+              1
+            </Link>
+            {pages[0] > 2 ? <span className="px-1 text-sm text-brand-muted">...</span> : null}
+          </>
+        ) : null}
+
+        {pages.map((item) =>
+          item === currentPage ? (
+            <span key={item} className={activeClass} aria-current="page">
+              {item}
+            </span>
+          ) : (
+            <Link key={item} href={categoryPageHref(categorySlug, subcategorySlug, item)} className={linkClass}>
+              {item}
+            </Link>
+          ),
+        )}
+
+        {pages[pages.length - 1] < totalPages ? (
+          <>
+            {pages[pages.length - 1] < totalPages - 1 ? (
+              <span className="px-1 text-sm text-brand-muted">...</span>
+            ) : null}
+            <Link href={categoryPageHref(categorySlug, subcategorySlug, totalPages)} className={linkClass}>
+              {totalPages}
+            </Link>
+          </>
+        ) : null}
+
+        {currentPage < totalPages ? (
+          <Link href={categoryPageHref(categorySlug, subcategorySlug, currentPage + 1)} className={linkClass}>
+            Növbəti
+          </Link>
+        ) : (
+          <span className={disabledClass}>Növbəti</span>
+        )}
+      </div>
+    </nav>
+  );
+}
+
 export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const { sub } = await searchParams;
+  const search = await searchParams;
+  const sub = firstParam(search.sub).trim();
   const entry = await getCatalogueEntryBySlug(slug);
 
   if (!entry) {
@@ -55,18 +176,32 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
 }
 
 function CategoryListingsSection({
-  listings,
+  listingPage,
+  categorySlug,
+  subcategorySlug,
   emptyMessage,
 }: {
-  listings: Awaited<ReturnType<typeof getListingsByCategorySlug>>;
+  listingPage: Awaited<ReturnType<typeof getListingsByCategorySlugPage>>;
+  categorySlug: string;
+  subcategorySlug?: string | null;
   emptyMessage: string;
 }) {
-  if (listings.length > 0) {
+  if (listingPage.listings.length > 0) {
     return (
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {listings.map((listing) => (
-          <LiveListingCard key={listing.id} listing={listing} />
-        ))}
+      <div className="space-y-4">
+        <div className="grid grid-cols-2 gap-2.5 md:gap-4 lg:grid-cols-4">
+          {listingPage.listings.map((listing) => (
+            <LiveListingCard key={listing.id} listing={listing} mobileCompact />
+          ))}
+        </div>
+        <CategoryPagination
+          categorySlug={categorySlug}
+          subcategorySlug={subcategorySlug}
+          page={listingPage.page}
+          limit={listingPage.limit}
+          total={listingPage.total}
+          totalPages={listingPage.totalPages}
+        />
       </div>
     );
   }
@@ -86,7 +221,9 @@ function CategoryListingsSection({
 
 export default async function CategorySlugPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const { sub } = await searchParams;
+  const search = await searchParams;
+  const sub = firstParam(search.sub).trim();
+  const page = parsePageParam(search.page);
   const entry = await getCatalogueEntryBySlug(slug);
 
   if (!entry) {
@@ -111,10 +248,13 @@ export default async function CategorySlugPage({ params, searchParams }: Props) 
   }
 
   const subcategory = sub ? await getSubcategoryBySlug(slug, sub) : null;
-  const subcategories = await getSubcategoriesByCategorySlug(slug);
-  const liveListings = await getListingsByCategorySlug(slug, {
-    subcategorySlug: subcategory?.slug,
-  });
+  const [subcategories, listingPage] = await Promise.all([
+    getSubcategoriesByCategorySlug(slug),
+    getListingsByCategorySlugPage(slug, {
+      page,
+      subcategorySlug: subcategory?.slug,
+    }),
+  ]);
 
   const pageTitle = subcategory ? `${entry.title} — ${subcategory.name}` : entry.title;
   const subtitle = subcategory
@@ -140,7 +280,12 @@ export default async function CategorySlugPage({ params, searchParams }: Props) 
         subcategories={subcategories}
         activeSubSlug={subcategory?.slug}
       />
-      <CategoryListingsSection listings={liveListings} emptyMessage={emptyMessage} />
+      <CategoryListingsSection
+        listingPage={listingPage}
+        categorySlug={slug}
+        subcategorySlug={subcategory?.slug}
+        emptyMessage={emptyMessage}
+      />
     </PageShell>
   );
 }

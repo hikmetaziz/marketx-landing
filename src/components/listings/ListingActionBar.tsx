@@ -142,6 +142,23 @@ export function ListingActionBar({
       <div className="space-y-3">
         <LiveListingFavoriteButton key={listing.id} listingId={listing.id} />
         <OpenInAppLink slug={listing.slug} />
+        {listing.store ? (
+          <Link
+            href={`/stores/${listing.store.slug}`}
+            className="flex w-full min-w-0 items-center gap-3 rounded-xl border border-brand-border/80 bg-brand-surface/50 p-3.5 text-left transition-colors hover:border-brand-primary/40 hover:bg-white"
+          >
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-primary-light text-lg font-extrabold text-brand-primary-dark">
+              {listing.store.name.charAt(0).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold uppercase text-brand-muted">Mağaza</p>
+              <p className="break-words text-base font-extrabold leading-snug text-brand-text">
+                {listing.store.name}
+              </p>
+            </div>
+            <ExternalLink className="h-4 w-4 shrink-0 text-brand-muted" />
+          </Link>
+        ) : null}
         <div className="grid gap-2.5 md:grid-cols-2">
           <ListingMessageButton
             listingId={listing.id}

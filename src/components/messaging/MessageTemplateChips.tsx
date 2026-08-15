@@ -1,16 +1,19 @@
 "use client";
 
-import { MESSAGE_TEMPLATES } from "@/constants/message-templates";
+import { MESSAGE_TEMPLATES, type MessageTemplate } from "@/constants/message-templates";
 
 type MessageTemplateChipsProps = {
   onSelect: (text: string) => void;
   disabled?: boolean;
+  templates?: readonly MessageTemplate[];
 };
 
-export function MessageTemplateChips({ onSelect, disabled = false }: MessageTemplateChipsProps) {
+export function MessageTemplateChips({ onSelect, disabled = false, templates = MESSAGE_TEMPLATES }: MessageTemplateChipsProps) {
+  if (templates.length === 0) return null;
+
   return (
     <div className="flex gap-2 overflow-x-auto px-1 pb-2">
-      {MESSAGE_TEMPLATES.map((item) => (
+      {templates.map((item) => (
         <button
           key={item.id}
           type="button"

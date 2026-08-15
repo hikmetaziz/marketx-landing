@@ -3,30 +3,36 @@
 import type { User } from "@supabase/supabase-js";
 import { useSyncExternalStore } from "react";
 
-import { isEmailConfirmed } from "@/lib/auth";
+import { isAuthConfirmed } from "@/lib/auth";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 function toAuthenticatedUser(user: User | null | undefined): User | null {
-  if (!user || !isEmailConfirmed(user)) return null;
+  if (!user || !isAuthConfirmed(user)) return null;
   return user;
 }
 
 type AuthStore = {
   user: User | null;
   loading: boolean;
+  role: string | null;
   isAdmin: boolean;
+  canAccessSupportPanel: boolean;
 };
 
 const SERVER_SNAPSHOT_CONFIGURED: AuthStore = {
   user: null,
   loading: true,
+  role: null,
   isAdmin: false,
+  canAccessSupportPanel: false,
 };
 
 const SERVER_SNAPSHOT_UNCONFIGURED: AuthStore = {
   user: null,
   loading: false,
+  role: null,
   isAdmin: false,
+  canAccessSupportPanel: false,
 };
 
 let store: AuthStore = isSupabaseConfigured()
@@ -67,7 +73,9 @@ function patchStore(patch: Partial<AuthStore>) {
   if (
     (patch.user === undefined || patch.user === store.user) &&
     (patch.loading === undefined || patch.loading === store.loading) &&
-    (patch.isAdmin === undefined || patch.isAdmin === store.isAdmin)
+    (patch.role === undefined || patch.role === store.role) &&
+    (patch.isAdmin === undefined || patch.isAdmin === store.isAdmin) &&
+    (patch.canAccessSupportPanel === undefined || patch.canAccessSupportPanel === store.canAccessSupportPanel)
   ) {
     return;
   }
@@ -75,6 +83,8 @@ function patchStore(patch: Partial<AuthStore>) {
   store = { ...store, ...patch };
   scheduleEmit();
 }
+
+let authUpdateVersion = 0;
 
 function initAuthStore() {
   if (initialized || typeof window === "undefined") {
@@ -102,19 +112,55 @@ function initAuthStore() {
       .eq("id", userId)
       .maybeSingle();
 
-    patchStore({ isAdmin: data?.role === "admin" });
+    const role = data?.role ?? null;
+    patchStore({
+      role,
+      isAdmin: role === "admin",
+      canAccessSupportPanel: role === "admin" || role === "moderator" || role === "support_agent",
+    });
   };
 
-  supabase.auth.onAuthStateChange((event, session) => {
-    if (
-      event !== "INITIAL_SESSION" &&
-      event !== "SIGNED_IN" &&
-      event !== "SIGNED_OUT" &&
-      event !== "TOKEN_REFRESHED"
-    ) {
+  const hydrateAuthUser = async () => {
+    const version = ++authUpdateVersion;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (version !== authUpdateVersion) {
       return;
     }
 
+    const nextUser = toAuthenticatedUser(user);
+    const userChanged =
+      store.user?.id !== nextUser?.id || store.user?.email !== nextUser?.email;
+
+    if (userChanged) {
+      patchStore({
+        user: nextUser,
+        role: nextUser ? store.role : null,
+        isAdmin: nextUser ? store.isAdmin : false,
+        canAccessSupportPanel: nextUser ? store.canAccessSupportPanel : false,
+      });
+    }
+
+    if (nextUser) {
+      void loadProfile(nextUser.id);
+    } else {
+      profileUserId = null;
+      patchStore({ role: null, isAdmin: false, canAccessSupportPanel: false });
+    }
+
+    patchStore({ loading: false });
+  };
+
+  void hydrateAuthUser();
+
+  supabase.auth.onAuthStateChange((event, session) => {
+    if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "TOKEN_REFRESHED") {
+      return;
+    }
+
+    ++authUpdateVersion;
     const nextUser = toAuthenticatedUser(session?.user);
     const userChanged =
       store.user?.id !== nextUser?.id || store.user?.email !== nextUser?.email;
@@ -122,7 +168,9 @@ function initAuthStore() {
     if (userChanged) {
       patchStore({
         user: nextUser,
+        role: nextUser ? store.role : null,
         isAdmin: nextUser ? store.isAdmin : false,
+        canAccessSupportPanel: nextUser ? store.canAccessSupportPanel : false,
       });
     }
 
@@ -132,11 +180,7 @@ function initAuthStore() {
       }
     } else {
       profileUserId = null;
-      patchStore({ isAdmin: false });
-    }
-
-    if (event === "INITIAL_SESSION") {
-      patchStore({ loading: false });
+      patchStore({ role: null, isAdmin: false, canAccessSupportPanel: false });
     }
   });
 }
@@ -160,7 +204,9 @@ export function useAuthUser() {
     supabase: getBrowserSupabase(),
     user: snapshot.user,
     loading: snapshot.loading,
+    role: snapshot.role,
     isAdmin: snapshot.isAdmin,
+    canAccessSupportPanel: snapshot.canAccessSupportPanel,
     isAuthenticated: Boolean(snapshot.user),
   };
 }

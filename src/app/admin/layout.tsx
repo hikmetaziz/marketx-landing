@@ -1,6 +1,6 @@
-import { requireAdmin } from "@/lib/supabase/admin-session";
+import { requireSupportPanelAccess } from "@/lib/supabase/admin-session";
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  await requireAdmin();
+  await requireSupportPanelAccess();
   return children;
 }

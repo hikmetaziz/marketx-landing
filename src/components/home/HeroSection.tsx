@@ -1,43 +1,48 @@
-import { LayoutGrid } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
-
-import { BrandName } from "@/components/BrandLogo";
-import { HERO } from "@/constants/data";
 
 export function HeroSection() {
   return (
-    <section className="relative z-10 pb-10 pt-14 sm:pt-18 lg:pt-22" aria-labelledby="hero-heading">
-      <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
-        {/* Başlıq */}
-        <h1
-          id="hero-heading"
-          className="text-[2.6rem] font-extrabold leading-[1.06] tracking-[-0.035em] text-white sm:text-[3.5rem] lg:text-[4.4rem]"
-        >
-          {HERO.headlineBefore}
-          <BrandName />
-          {HERO.headlineAfter}
-        </h1>
+    <section
+      className="relative isolate mx-auto min-h-[330px] max-w-[1180px] overflow-hidden border-b border-brand-border bg-white md:min-h-[510px]"
+      aria-labelledby="hero-heading"
+    >
+      <Image
+        src="/images/home/marktx-marketplace-hero-v2.webp"
+        alt=""
+        fill
+        priority
+        sizes="(min-width: 1440px) 1180px, 100vw"
+        className="object-cover object-[47%_center] sm:object-[34%_center] lg:object-center"
+      />
 
-        {/* Subtitle */}
-        <p className="mx-auto mt-4 max-w-lg text-lg leading-relaxed text-white/75 sm:text-xl">
-          {HERO.subtitle}
-        </p>
+      <div className="relative z-10 flex min-h-[330px] items-start px-4 pb-8 pt-7 sm:px-6 md:min-h-[510px] md:pb-20 md:pt-14 lg:px-7 lg:pt-16">
+        <div className="w-[58%] max-w-[245px] sm:max-w-[360px] md:w-auto md:max-w-[620px]">
+          <p className="mb-2 inline-flex items-center rounded-lg border border-brand-primary/25 bg-brand-primary-light/30 px-2.5 py-1 text-xs font-bold text-brand-primary-dark md:mb-5 md:px-3 md:py-1.5 md:text-sm">
+            MarktX — Elan və mağazalar bir yerdə
+          </p>
 
-        {/* CTA buttons */}
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-          <Link
-            href={HERO.primaryCta.href}
-            className="btn-primary-premium inline-flex items-center justify-center gap-2 rounded-xl px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-black/25"
+          <h1
+            id="hero-heading"
+            className="max-w-[540px] text-[26px] font-extrabold leading-[1.04] text-[#0b1f3a] sm:text-4xl md:text-5xl lg:text-[50px]"
           >
-            <LayoutGrid className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
-            {HERO.primaryCta.label}
-          </Link>
+            <span className="block">Online elan</span>
+            <span className="mt-1 block text-[#173b69] sm:mt-2">MarktX-la daha asan.</span>
+          </h1>
+
+          <p className="mt-2 max-w-[230px] text-[13px] leading-5 text-brand-muted sm:max-w-[340px] sm:text-base md:mt-6 md:max-w-[500px] md:text-lg md:leading-7">
+            Məhsul, xidmət və mağazaları bir platformada kəşf edin. Kateqoriyanı seçin,
+            elanları müqayisə edin və birbaşa əlaqə saxlayın.
+          </p>
+
           <Link
-            href={HERO.secondaryCta.href}
-            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/30 bg-white/10 px-8 py-3.5 text-base font-semibold text-white backdrop-blur-sm transition-all hover:bg-white/20 hover:border-white/50"
+            href="/account/store/apply"
+            className="group mt-3 inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#f97316] px-4 py-2 text-sm font-black text-white shadow-[0_10px_24px_rgba(249,115,22,0.28)] transition-all hover:-translate-y-0.5 hover:bg-[#ea580c] hover:shadow-[0_14px_30px_rgba(249,115,22,0.34)] active:translate-y-0 sm:mt-5"
           >
-            <LayoutGrid className="h-4 w-4 text-white/70" aria-hidden="true" />
-            {HERO.secondaryCta.label}
+            Mağazanı yarat
+            <span aria-hidden="true" className="transition-transform group-hover:translate-x-0.5">
+              →
+            </span>
           </Link>
         </div>
       </div>

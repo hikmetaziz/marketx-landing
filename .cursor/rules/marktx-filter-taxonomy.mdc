@@ -1,0 +1,37 @@
+---
+description: MarktX veb+mobil — taxonomy, filter sheet və minimal fix qaydaları
+alwaysApply: true
+---
+
+# MarktX — filter və taxonomy
+
+İki repo: veb `marketx-landing`, mobil `marktx-app`. Eyni Supabase `categories` (16 slug).
+
+## Filter vs naviqasiya (mobil)
+
+- **Filter sheet** (`ListingFiltersSheet`): kateqoriya seçimi **yerində filter**dir — `Tətbiq et`ə qədər naviqasiya yoxdur.
+- **Kateqoriya chip / kataloq tile**: browse — `/category/{slug}` və ya vebdə `/categories/{slug}`.
+- **Qadağan:** filter dropdown-da `onCategoryPress` / `router.push` ilə dərhal keçid — sheet bağlanır, qiymət/şəhər yazılmır.
+
+## State və filter pipeline (mobil)
+
+- `normalizeListingFilters` **bütün** sahələri saxlamalıdır, o cümlədən `category`.
+- `filterListings` `filters.category` istifadə etməlidir (`category_id` + legacy `category` mətni).
+- `onChange` → `normalizeListingFilters` zənciri yeni sahə əlavə edəndə həmin sahəni unutmasın.
+
+## Veb axtarış
+
+- Dropdown: `getListingSearchCategoryOptions()` → `getCatalogue()` (16 kateqoriya).
+- Sorğu: `resolveCategoryFilter` + `category_id` / alias (browse ilə eyni).
+
+## Dəyişiklik prinsipi
+
+- Əvvəl **minimal diff** (1–3 sətir): mövcud chip/browse/nav flow-u toxunma.
+- Refactor yalnız bug həqiqətən tələb edəndə.
+- Veb və mobil eyni taxonomy; UX fərqi ola bilər, amma filter məntiqi uyğun olmalıdır.
+
+## Minimal fix nümunəsi (mobil filter bug)
+
+1. Kateqoriya `onPress`-dən `onCategoryPress` sil.
+2. `normalizeListingFilters`-ə `category: p.category ?? null`.
+3. `filterListings`-də `filters.category` yoxlaması.

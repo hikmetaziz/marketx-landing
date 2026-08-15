@@ -8,6 +8,7 @@ const TABS: Array<{ value: AdminListingStatusFilter; label: string }> = [
   { value: "sold", label: "Satıldı" },
   { value: "rejected", label: "Rədd" },
   { value: "archived", label: "Arxiv" },
+  { value: "deleted", label: "Silinib" },
   { value: "all", label: "Hamısı" },
 ];
 
@@ -56,6 +57,8 @@ export function getAdminListingsEmptyMessage(status: AdminListingStatusFilter): 
       return "Rədd edilmiş elan yoxdur.";
     case "archived":
       return "Arxivdə elan yoxdur.";
+    case "deleted":
+      return "Silinmiş elan yoxdur.";
     case "all":
       return "Elan tapılmadı.";
     default:

@@ -8,9 +8,11 @@ import { useState, useTransition } from "react";
 import { markMyListingSold, renewMyListing } from "@/app/account/listings/actions";
 import { useMyListingsRealtimeRefresh } from "@/hooks/use-listing-realtime-refresh";
 import { ListingImage } from "@/components/ui/ListingImage";
+import { OwnerListingStatusBadge } from "@/components/listings/OwnerListingStatusBadge";
+import { OwnerListingActions } from "@/components/listings/OwnerListingActions";
 import { dbCategoryToDisplay } from "@/lib/listings/category-map";
 import { getListingExpiryUi } from "@/lib/listings/expiry";
-import { formatListingDate, formatListingPrice, formatListingViewCount } from "@/lib/listings/format";
+import { formatListingPrice, formatListingRelativeDate, formatListingViewCount } from "@/lib/listings/format";
 import {
   getPrimaryListingImage,
   LISTING_IMAGE_FALLBACK_CLASS,
@@ -26,9 +28,17 @@ function getPublicListingHref(listing: MyListing): string | null {
     return null;
   }
   if (listing.status === "active" || listing.status === "sold") {
-    return `/listings/${listing.slug}`;
+    return `/elanlar/${listing.slug}`;
   }
   return null;
+}
+
+function formatDeletedHistoryMessage(deletedAt: string | null): string {
+  const suffix = deletedAt
+    ? ` Silinmə tarixi: ${new Date(deletedAt).toLocaleDateString("az-Latn-AZ")}.`
+    : "";
+
+  return `Bu elan ictimai səhifələrdən gizlədilib və tarixçə üçün bazada saxlanılır.${suffix}`;
 }
 
 export function MyListingsPanel({ listings }: MyListingsPanelProps) {
@@ -68,10 +78,10 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
 
   if (listings.length === 0) {
     return (
-      <div className="rounded-2xl border border-brand-border/90 bg-brand-surface/60 p-8 text-center">
+      <div className="rounded-xl border border-brand-border/90 bg-brand-surface/60 p-5 text-center md:rounded-2xl md:p-8">
         <p className="text-sm text-brand-muted">Hələ elan yaratmamısınız.</p>
         <Link
-          href="/create-listing"
+          href="/elan-yarat"
           className="btn-primary-premium mt-4 inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white"
         >
           İlk elanı yerləşdir
@@ -81,14 +91,14 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4">
       {errorMessage ? (
         <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
           {errorMessage}
         </div>
       ) : null}
 
-      <ul className="space-y-4">
+      <ul className="space-y-3 md:space-y-4">
         {listings.map((listing) => {
           const primaryImage = getPrimaryListingImage(listing);
           const publicHref = getPublicListingHref(listing);
@@ -98,16 +108,17 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
           return (
             <li
               key={listing.id}
-              className="card-premium overflow-hidden rounded-2xl hover:translate-y-0"
+              className="card-premium overflow-hidden rounded-xl hover:translate-y-0 md:rounded-2xl"
             >
-              <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-start">
-                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-brand-surface sm:w-36">
+              <div className="flex flex-col gap-3 p-3 md:flex-row md:items-start md:gap-4 md:p-4">
+                <div className="relative aspect-[4/3] w-full shrink-0 overflow-hidden rounded-xl bg-brand-surface md:w-36">
                   {primaryImage ? (
                     <ListingImage
                       src={primaryImage}
                       alt={listing.title}
                       fallbackClass={LISTING_IMAGE_FALLBACK_CLASS}
                       sizes="144px"
+                      fit="contain"
                     />
                   ) : (
                     <div
@@ -122,11 +133,12 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
 
                 <div className="min-w-0 flex-1 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs text-brand-muted">{formatListingDate(listing.created_at)}</span>
+                    <OwnerListingStatusBadge status={listing.status} />
+                    <span className="text-xs text-brand-muted">{formatListingRelativeDate(listing.created_at)}</span>
                   </div>
 
-                  <h2 className="text-lg font-bold text-brand-text">{listing.title}</h2>
-                  <p className="text-lg font-extrabold text-brand-primary">{formatListingPrice(listing.price)}</p>
+                  <h2 className="text-base font-bold text-brand-text md:text-lg">{listing.title}</h2>
+                  <p className="text-base font-extrabold text-brand-primary md:text-lg">{formatListingPrice(listing.price)}</p>
 
                   <p className="text-sm text-brand-muted">
                     {dbCategoryToDisplay(listing.category)} · {listing.city}
@@ -158,6 +170,8 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
                   ) : null}
 
                   <div className="flex flex-wrap gap-2 pt-1">
+                    <OwnerListingActions listingId={listing.id} listingTitle={listing.title} status={listing.status} />
+
                     {publicHref ? (
                       <Link
                         href={publicHref}
@@ -180,7 +194,7 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
                       </button>
                     ) : null}
 
-                    {expiry.canRenew ? (
+                  {expiry.canRenew ? (
                       <button
                         type="button"
                         disabled={loading}
@@ -190,7 +204,13 @@ export function MyListingsPanel({ listings }: MyListingsPanelProps) {
                         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                         Yenilə (+30 gün)
                       </button>
-                    ) : null}
+                  ) : null}
+
+                  {listing.status === "deleted" ? (
+                    <p className="basis-full rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                      {formatDeletedHistoryMessage(listing.deleted_at)}
+                    </p>
+                  ) : null}
                   </div>
                 </div>
               </div>

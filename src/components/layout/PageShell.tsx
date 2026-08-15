@@ -10,7 +10,7 @@ type PageShellProps = {
 export function PageShell({ title, subtitle, children, wide = false }: PageShellProps) {
   return (
     <article
-      className={`mx-auto px-4 py-10 sm:px-6 sm:py-12 lg:px-8 ${wide ? "max-w-7xl" : "max-w-3xl"}`}
+      className={`mx-auto px-3 py-6 md:px-6 md:py-12 lg:px-8 ${wide ? "max-w-7xl" : "max-w-3xl"}`}
     >
       <Link
         href="/"
@@ -18,13 +18,13 @@ export function PageShell({ title, subtitle, children, wide = false }: PageShell
       >
         ← Ana səhifə
       </Link>
-      <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-brand-text sm:text-4xl">
+      <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-brand-text md:mt-4 md:text-4xl">
         {title}
       </h1>
       {subtitle ? (
-        <p className="mt-3 max-w-2xl text-base leading-relaxed text-brand-muted">{subtitle}</p>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-brand-muted md:mt-3 md:text-base">{subtitle}</p>
       ) : null}
-      <div className="mt-8">{children}</div>
+      <div className="mt-5 md:mt-8">{children}</div>
     </article>
   );
 }

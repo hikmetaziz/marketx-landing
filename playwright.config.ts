@@ -22,9 +22,14 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: process.env.CI ? "npm run start" : "npm run dev",
+    command: process.env.CI
+      ? `npm run start -- --port ${PORT}`
+      : `npm run dev -- --port ${PORT}`,
     url: baseURL,
     reuseExistingServer: !process.env.CI,
+    env: {
+      NEXT_ALLOWED_DEV_ORIGINS: "127.0.0.1",
+    },
     timeout: 120_000,
   },
 });

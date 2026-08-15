@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 
+import { signOutWithCleanup } from "@/lib/auth/sign-out";
 import {
   isEmailConfirmed,
   translateAuthError,
@@ -138,7 +139,7 @@ export function LoginForm() {
 
   const handleSignOut = async () => {
     setLoadingAction("login");
-    await supabase.auth.signOut();
+    await signOutWithCleanup(supabase);
     setLoadingAction(null);
     clearMessages();
     router.refresh();
@@ -147,13 +148,18 @@ export function LoginForm() {
   const handleSignIn = async () => {
     clearMessages();
 
-    const emailError = validateEmail(email);
-    if (emailError) {
-      setErrorMessage(emailError);
+    if (!normalizedEmail) {
+      setErrorMessage("Email ünvanını daxil edin.");
       return;
     }
     if (!password) {
-      setErrorMessage("Parol daxil edin.");
+      setErrorMessage("Şifrəni daxil edin.");
+      return;
+    }
+
+    const emailError = validateEmail(normalizedEmail);
+    if (emailError) {
+      setErrorMessage(emailError);
       return;
     }
 
@@ -170,7 +176,7 @@ export function LoginForm() {
     }
 
     if (!isEmailConfirmed(data.session?.user ?? null)) {
-      await supabase.auth.signOut();
+      await supabase.auth.signOut({ scope: "local" });
       setErrorMessage("Email təsdiqlənməyib. Poçt qutunuzdakı təsdiq linkinə klik edin.");
       return;
     }

@@ -5,7 +5,17 @@ import { isSupabaseConfigured } from "@/lib/supabase/env";
 
 import { getAuthenticatedUser } from "@/lib/supabase/session";
 
-export async function getAdminUser() {
+export type ProfileRole = "admin" | "moderator" | "support_agent" | "user" | string | null;
+
+function isAdminRole(role: ProfileRole): boolean {
+  return role === "admin";
+}
+
+function canAccessSupportPanelRole(role: ProfileRole): boolean {
+  return role === "admin" || role === "moderator" || role === "support_agent";
+}
+
+export async function getUserWithProfileRole() {
   const user = await getAuthenticatedUser();
   if (!user || !isSupabaseConfigured()) {
     return null;
@@ -15,14 +25,28 @@ export async function getAdminUser() {
     const supabase = await createClient();
     const { data } = await supabase.from("profiles").select("role").eq("id", user.id).maybeSingle();
 
-    if (data?.role !== "admin") {
-      return null;
-    }
-
-    return user;
+    return { user, role: (data?.role ?? null) as ProfileRole };
   } catch {
     return null;
   }
+}
+
+export async function getAdminUser() {
+  const session = await getUserWithProfileRole();
+  if (!session || !isAdminRole(session.role)) {
+    return null;
+  }
+
+  return session.user;
+}
+
+export async function getSupportPanelUser() {
+  const session = await getUserWithProfileRole();
+  if (!session || !canAccessSupportPanelRole(session.role)) {
+    return null;
+  }
+
+  return session.user;
 }
 
 export async function requireAdmin() {
@@ -38,4 +62,19 @@ export async function requireAdmin() {
   }
 
   return admin;
+}
+
+export async function requireSupportPanelAccess() {
+  const user = await getAuthenticatedUser();
+
+  if (!user) {
+    redirect("/login?returnTo=/admin/support");
+  }
+
+  const supportUser = await getSupportPanelUser();
+  if (!supportUser) {
+    redirect("/");
+  }
+
+  return supportUser;
 }

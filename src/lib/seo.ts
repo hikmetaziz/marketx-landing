@@ -54,10 +54,6 @@ export const DEFAULT_METADATA: Metadata = {
   },
   description:
     "MarktX — Azərbaycanda online elan platforması. Alıcı və satıcıları bir araya gətirən rəsmi veb-sayt: marketx.az",
-  icons: {
-    icon: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-    apple: [{ url: "/favicon.svg", type: "image/svg+xml" }],
-  },
   openGraph: {
     siteName: SITE.name,
     locale: "az_AZ",

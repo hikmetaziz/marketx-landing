@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ListingDetailGallery } from "@/components/listings/ListingDetailGallery";
 import { ListingShareButton } from "@/components/listings/ListingShareButton";
 import { ListingViewDisplay } from "@/components/listings/ListingViewCount";
+import { ListingStatusBadge } from "@/components/listings/ListingStatusBadge";
 import { buildListingReportMailto } from "@/lib/listings/report";
 import { getListingPublicUrl } from "@/lib/listings/listing-url";
 import type { SampleListing } from "@/types/listing";
@@ -27,6 +28,7 @@ export function SoldSampleListingDetail({ listing }: SoldSampleListingDetailProp
       <aside className="mt-6 lg:sticky lg:top-24 lg:mt-0">
         <div className="card-premium space-y-5 rounded-2xl p-5 sm:p-6 hover:translate-y-0">
           <div className="space-y-3">
+            <ListingStatusBadge status={listing.status} />
             <h1 className="text-2xl font-extrabold leading-tight tracking-tight text-brand-text sm:text-[1.75rem]">
               {listing.title}
             </h1>
@@ -76,12 +78,18 @@ export function SoldSampleListingDetail({ listing }: SoldSampleListingDetailProp
             >
               Bu elan satılıb
             </button>
-            <ListingShareButton title={listing.title} slug={listing.slug} shareUrl={listingUrl} variant="tertiary" />
+            <ListingShareButton
+              title={listing.title}
+              price={listing.price}
+              slug={listing.slug}
+              shareUrl={listingUrl}
+              variant="tertiary"
+            />
           </div>
 
           <div className="flex flex-col gap-2.5 border-t border-brand-border/70 pt-5 sm:flex-row">
             <Link
-              href="/listings"
+              href="/elanlar"
               className="inline-flex flex-1 items-center justify-center rounded-xl border border-brand-border bg-white px-5 py-3 text-sm font-semibold text-brand-text transition-colors hover:border-brand-primary/40 hover:text-brand-primary"
             >
               Bütün elanlar

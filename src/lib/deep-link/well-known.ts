@@ -31,7 +31,7 @@ export function getAndroidPackageName(): string {
 /**
  * Apple Universal Links — yalnız MARKETX_IOS_APP_IDS doldurulanda aktiv.
  * iOS yoxdursa boş details qaytarır (200 OK, heç nə pozulmur).
- * Yalnız /listings/* — mobil app-in hazırkı deep link qabiliyyəti ilə uyğundur.
+ * Yalnız /elanlar/* — mobil app-in hazırkı deep link qabiliyyəti ilə uyğundur.
  */
 export function buildAppleAppSiteAssociation() {
   const appIds = getIosAppIds();

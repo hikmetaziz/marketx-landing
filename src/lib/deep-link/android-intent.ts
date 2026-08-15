@@ -1,4 +1,5 @@
 import { ANDROID_APP_PACKAGE } from "@/lib/deep-link/constants";
+import { SITE } from "@/constants/data";
 import { getListingPublicUrl } from "@/lib/listings/listing-url";
 
 /**
@@ -7,7 +8,18 @@ import { getListingPublicUrl } from "@/lib/listings/listing-url";
  */
 export function getAndroidListingIntentUrl(slug: string): string {
   const fallback = getListingPublicUrl(slug);
-  const path = `marketx.az/listings/${encodeURIComponent(slug)}`;
+  const path = `marketx.az/elanlar/${encodeURIComponent(slug)}`;
+
+  return (
+    `intent://${path}` +
+    `#Intent;scheme=https;package=${ANDROID_APP_PACKAGE};` +
+    `S.browser_fallback_url=${encodeURIComponent(fallback)};end`
+  );
+}
+
+export function getAndroidStoreIntentUrl(slug: string): string {
+  const fallback = `${SITE.url}/stores/${encodeURIComponent(slug)}`;
+  const path = `marketx.az/stores/${encodeURIComponent(slug)}`;
 
   return (
     `intent://${path}` +

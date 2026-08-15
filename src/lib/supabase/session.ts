@@ -1,4 +1,4 @@
-import { isEmailConfirmed } from "@/lib/auth";
+import { isAuthConfirmed } from "@/lib/auth";
 import { isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
@@ -13,7 +13,7 @@ export async function getAuthenticatedUser() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user || !isEmailConfirmed(user)) {
+    if (!user || !isAuthConfirmed(user)) {
       return null;
     }
 

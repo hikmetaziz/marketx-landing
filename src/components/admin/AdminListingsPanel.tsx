@@ -8,20 +8,23 @@ import { useState, useTransition } from "react";
 import { approveListing, rejectListing } from "@/app/admin/listings/actions";
 import { OwnerListingStatusBadge } from "@/components/listings/OwnerListingStatusBadge";
 import { dbCategoryToDisplay } from "@/lib/listings/category-map";
-import { formatListingDate, formatListingPrice } from "@/lib/listings/format";
+import { formatListingPrice, formatListingRelativeDate } from "@/lib/listings/format";
 import type { AdminListing } from "@/lib/listings/admin-listings";
 
 type AdminListingsPanelProps = {
   listings: AdminListing[];
   showModerationActions?: boolean;
   emptyMessage?: string;
+  relativeDateNowIso: string;
 };
 
 export function AdminListingsPanel({
   listings,
   showModerationActions = true,
   emptyMessage = "Gözləyən elan yoxdur.",
+  relativeDateNowIso,
 }: AdminListingsPanelProps) {
+  const relativeDateNow = new Date(relativeDateNowIso);
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -87,7 +90,9 @@ export function AdminListingsPanel({
                   </td>
                   <td className="px-4 py-4 text-brand-muted">{dbCategoryToDisplay(listing.category)}</td>
                   <td className="px-4 py-4 text-brand-muted">{listing.city}</td>
-                  <td className="px-4 py-4 text-brand-muted">{formatListingDate(listing.created_at)}</td>
+                  <td className="px-4 py-4 text-brand-muted">
+                    {formatListingRelativeDate(listing.created_at, relativeDateNow)}
+                  </td>
                   <td className="px-4 py-4">
                     <OwnerListingStatusBadge status={listing.status} />
                   </td>

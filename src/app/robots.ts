@@ -12,6 +12,7 @@ export default function robots(): MetadataRoute.Robots {
         allow: "/",
         disallow: [
           "/login",
+          "/elan-yarat",
           "/create-listing",
           "/reset-password",
           "/auth/",

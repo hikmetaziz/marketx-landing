@@ -78,7 +78,7 @@ export function Footer() {
         </div>
 
         <div className="mt-10 border-t border-slate-800 pt-6 text-center text-xs text-slate-500">
-          © {year} {SITE.name}. Bütün hüquqlar qorunur.
+          © <span suppressHydrationWarning>{year}</span> {SITE.name}. Bütün hüquqlar qorunur.
         </div>
       </div>
     </footer>

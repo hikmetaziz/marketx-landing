@@ -5,7 +5,11 @@ import { categoryToSlug, slugToCategory } from "@/lib/categories";
 /** DB category (create-listing / mobile app) → display category (ALL_CATEGORIES) */
 const DB_CATEGORY_TO_DISPLAY: Record<string, (typeof ALL_CATEGORIES)[number]> = {
   Avto: "Avtomobil və nəqliyyat",
-  Telefon: "Elektronika",
+  "Ehtiyat hissələri": "Avto ehtiyat hissələri və avadanlıq",
+  "Avto ehtiyat hissələri": "Avto ehtiyat hissələri və avadanlıq",
+  "Avto avadanlıq": "Avto ehtiyat hissələri və avadanlıq",
+  "Avto aksesuarlar": "Avto ehtiyat hissələri və avadanlıq",
+  Telefon: "Telefon",
   Elektronika: "Elektronika",
   "Daşınmaz əmlak": "Daşınmaz əmlak",
   "Ev və bağ": "Ev və bağ",

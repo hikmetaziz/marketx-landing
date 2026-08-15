@@ -10,6 +10,7 @@ type Props = {
   alt: string;
   fallbackClass: string;
   sizes?: string;
+  fit?: "cover" | "contain";
 };
 
 function ListingImageFallback({ alt, fallbackClass }: Pick<Props, "alt" | "fallbackClass">) {
@@ -23,7 +24,7 @@ function ListingImageFallback({ alt, fallbackClass }: Pick<Props, "alt" | "fallb
   );
 }
 
-export function ListingImage({ src, alt, fallbackClass, sizes }: Props) {
+export function ListingImage({ src, alt, fallbackClass, sizes, fit = "cover" }: Props) {
   const [failed, setFailed] = useState(false);
   const safeSrc = sanitizeImageUrl(src);
 
@@ -31,14 +32,16 @@ export function ListingImage({ src, alt, fallbackClass, sizes }: Props) {
     return <ListingImageFallback alt={alt} fallbackClass={fallbackClass} />;
   }
 
+  const skipOptimizer = safeSrc.startsWith("blob:");
+
   return (
     <Image
       src={safeSrc}
       alt={alt}
       fill
-      unoptimized={safeSrc.startsWith("blob:")}
+      unoptimized={skipOptimizer}
       sizes={sizes ?? "(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 280px"}
-      className="object-cover"
+      className={fit === "contain" ? "object-contain p-6" : "object-cover"}
       onError={() => setFailed(true)}
     />
   );

@@ -21,11 +21,12 @@ alter table public.listings drop constraint if exists listings_status_check;
 
 alter type public.listing_status add value if not exists 'rejected';
 alter type public.listing_status add value if not exists 'archived';
+alter type public.listing_status add value if not exists 'deleted';
 
 comment on type public.listing_status is
   'Phase 2 workflow: pending → active/rejected; active → sold; admin may archive.';
 
--- Expected values: pending, active, sold, rejected, archived (+ any legacy mobile values).
+-- Expected values: pending, active, sold, rejected, archived, deleted (+ any legacy mobile values).
 
 -- ── 3) Slug helper ───────────────────────────────────────────────────────────
 

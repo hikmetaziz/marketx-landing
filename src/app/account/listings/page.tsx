@@ -12,7 +12,7 @@ import { getAuthenticatedUser } from "@/lib/supabase/session";
 
 export const metadata: Metadata = createPageMetadata({
   title: "Mənim elanlarım",
-  description: "MarktX-də yerləşdirdiyiniz elanlar.",
+  description: "MarktX-də yerləşdirdiyiniz elanların statusu.",
   path: "/account/listings",
   noIndex: true,
 });
@@ -33,13 +33,13 @@ export default async function MyListingsPage() {
     <PageShell
       wide
       title="Mənim elanlarım"
-      subtitle="Yerləşdirdiyiniz elanları idarə edin."
+      subtitle="Elanlarınızın statusunu izləyin. Düzəliş edə, silə və ya satıldı edə bilərsiniz."
     >
       <AccountSubnav active="listings" />
-      <div className="mb-6">
+      <div className="mb-5 md:mb-6">
         <Link
-          href="/create-listing"
-          className="btn-primary-premium inline-flex items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white"
+          href="/elan-yarat"
+          className="btn-primary-premium inline-flex w-full items-center justify-center rounded-xl px-5 py-2.5 text-sm font-semibold text-white md:w-auto"
         >
           Yeni elan
         </Link>

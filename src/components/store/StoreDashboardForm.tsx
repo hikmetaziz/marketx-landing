@@ -66,6 +66,14 @@ export function StoreDashboardForm({
 }: {
   store: Store;
 }) {
+  return <StoreDashboardFormContent key={store.id} store={store} />;
+}
+
+function StoreDashboardFormContent({
+  store,
+}: {
+  store: Store;
+}) {
   const router = useRouter();
 
   const [isPending, startTransition] = useTransition();
@@ -80,13 +88,6 @@ export function StoreDashboardForm({
 
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
-
-  useEffect(() => {
-    if (!isEditing) {
-      setValues(getInitialValues(store));
-    }
-  }, [isEditing, store]);
-
 
   useEffect(() => {
     if (!isDeleteModalOpen) return;

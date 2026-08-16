@@ -29,6 +29,9 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder
 
+      - name: JSON-LD security regression test
+        run: npm run test:json-ld
+
       - name: Install Playwright
         run: npx playwright install --with-deps chromium
 

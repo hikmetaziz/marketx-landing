@@ -19,6 +19,7 @@
     "taxonomy:validate": "node scripts/taxonomy/validate.mjs",
     "taxonomy:coverage": "node scripts/taxonomy/coverage.mjs",
     "test:phone": "node tests/contact-phone.test.mjs",
+    "test:json-ld": "node tests/json-ld-security.test.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui"
   },

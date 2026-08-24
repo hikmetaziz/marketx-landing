@@ -1,6 +1,7 @@
 "use client";
 
 import { Loader2, Pencil, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
   useEffect,
@@ -10,6 +11,11 @@ import {
 
 import { deleteMyStore, updateMyStore } from "@/app/account/store/actions";
 import { readStoreMapFieldsFromForm } from "@/lib/stores/store-map-fields";
+import {
+  removeUploadedStoreImages,
+  STORE_IMAGE_ACCEPT,
+  uploadStoreImage,
+} from "@/lib/stores/store-images";
 import type { Store } from "@/types/store";
 
 const inputClass =
@@ -61,6 +67,64 @@ function ReadonlyField({
   );
 }
 
+function StoreImageField({
+  label,
+  currentUrl,
+  file,
+  kind,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  currentUrl: string | null;
+  file: File | null;
+  kind: "logo" | "cover";
+  disabled: boolean;
+  onChange: (file: File | null) => void;
+}) {
+  const isLogo = kind === "logo";
+
+  return (
+    <div className="rounded-xl border border-brand-border/80 p-3.5">
+      <p className="text-sm font-semibold text-brand-text">{label}</p>
+      <div
+        className={`relative mt-2 overflow-hidden rounded-lg border border-brand-border bg-brand-surface/40 ${
+          isLogo ? "h-28 w-28" : "h-32 w-full"
+        }`}
+      >
+        {currentUrl ? (
+          <Image
+            src={currentUrl}
+            alt={`${label} önizləməsi`}
+            fill
+            sizes={isLogo ? "112px" : "(max-width: 767px) 100vw, 360px"}
+            className={isLogo ? "bg-white object-contain" : "object-cover"}
+          />
+        ) : (
+          <span className="flex h-full items-center justify-center px-3 text-center text-xs text-brand-muted">
+            Şəkil əlavə edilməyib
+          </span>
+        )}
+      </div>
+      <label className="mt-3 inline-flex cursor-pointer items-center rounded-lg border border-brand-border bg-white px-3 py-2 text-xs font-bold text-brand-primary transition-colors hover:border-brand-primary/40">
+        {isLogo ? "Yeni logo seç" : "Yeni örtük seç"}
+        <input
+          type="file"
+          accept={STORE_IMAGE_ACCEPT}
+          disabled={disabled}
+          onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+          className="sr-only"
+        />
+      </label>
+      {file ? (
+        <p className="mt-2 truncate text-xs text-brand-muted" title={file.name}>
+          {file.name}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 export function StoreDashboardForm({
   store,
 }: {
@@ -88,6 +152,8 @@ function StoreDashboardFormContent({
 
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (!isDeleteModalOpen) return;
@@ -122,6 +188,8 @@ function StoreDashboardFormContent({
 
   const handleEdit = () => {
     setValues(getInitialValues(store));
+    setLogoFile(null);
+    setCoverFile(null);
     setErrorMessage("");
     setSuccessMessage("");
     setIsEditing(true);
@@ -131,6 +199,8 @@ function StoreDashboardFormContent({
     if (isPending) return;
 
     setValues(getInitialValues(store));
+    setLogoFile(null);
+    setCoverFile(null);
     setErrorMessage("");
     setSuccessMessage("");
     setIsEditing(false);
@@ -193,7 +263,19 @@ function StoreDashboardFormContent({
     }
 
     startTransition(async () => {
+      const uploadedPaths: string[] = [];
+
       try {
+        const logoUpload = logoFile
+          ? await uploadStoreImage(store.id, "logo", logoFile)
+          : null;
+        if (logoUpload) uploadedPaths.push(logoUpload.path);
+
+        const coverUpload = coverFile
+          ? await uploadStoreImage(store.id, "cover", coverFile)
+          : null;
+        if (coverUpload) uploadedPaths.push(coverUpload.path);
+
         const result = await updateMyStore(store.id, {
           name,
           description: String(
@@ -207,19 +289,25 @@ function StoreDashboardFormContent({
           ),
           city: String(data.get("city") ?? ""),
           ...readStoreMapFieldsFromForm(data),
+          ...(logoUpload ? { logoUrl: logoUpload.publicUrl } : {}),
+          ...(coverUpload ? { coverUrl: coverUpload.publicUrl } : {}),
         });
 
         if (!result.ok) {
+          await removeUploadedStoreImages(uploadedPaths);
           setErrorMessage(result.error);
           return;
         }
 
+        setLogoFile(null);
+        setCoverFile(null);
         setSuccessMessage(
           "Mağaza məlumatları yeniləndi.",
         );
         setIsEditing(false);
         router.refresh();
       } catch (error) {
+        await removeUploadedStoreImages(uploadedPaths);
         console.error("Store update failed", error);
 
         setErrorMessage(
@@ -321,6 +409,24 @@ function StoreDashboardFormContent({
       ) : (
         <>
           <div className="grid gap-3 md:grid-cols-2 md:gap-4">
+            <StoreImageField
+              label="Logo"
+              currentUrl={store.logo_url}
+              file={logoFile}
+              kind="logo"
+              disabled={isPending}
+              onChange={setLogoFile}
+            />
+
+            <StoreImageField
+              label="Örtük şəkli"
+              currentUrl={store.cover_url}
+              file={coverFile}
+              kind="cover"
+              disabled={isPending}
+              onChange={setCoverFile}
+            />
+
             <label className="block md:col-span-2">
               <span className="mb-1.5 block text-sm font-semibold text-brand-text">
                 Mağaza adı *

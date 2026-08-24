@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { getAuthenticatedUser } from "@/lib/supabase/session";
-import { isSupabaseConfigured } from "@/lib/supabase/env";
+import { getSupabaseUrl, isSupabaseConfigured } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 
 type ActionResult =
@@ -16,6 +16,40 @@ const CLAIM_INVALID_MESSAGE =
   "Mağaza kodu və ya sahiblik təsdiq kodu düzgün deyil, ya da bu müraciət artıq edilib.";
 const STORE_EDIT_PERMISSION_MESSAGE =
   "Bu mağazanı redaktə etmək icazəniz yoxdur.";
+const STORE_IMAGE_INVALID_MESSAGE =
+  "Mağaza şəkli təsdiqlənmədi. Yenidən seçib cəhd edin.";
+
+function validateStoreImageUrl(
+  value: string,
+  userId: string,
+  storeId: string,
+  kind: "logo" | "cover",
+): string | null {
+  const supabaseUrl = getSupabaseUrl();
+  if (!supabaseUrl) return null;
+
+  try {
+    const parsed = new URL(value);
+    const expectedOrigin = new URL(supabaseUrl).origin;
+    const expectedPrefix =
+      `/storage/v1/object/public/listing-images/${userId}/stores/${storeId}/${kind}-`;
+    const fileName = parsed.pathname.slice(expectedPrefix.length);
+
+    if (
+      parsed.origin !== expectedOrigin ||
+      !parsed.pathname.startsWith(expectedPrefix) ||
+      !/^[0-9a-f-]{36}\.jpg$/i.test(fileName) ||
+      parsed.search ||
+      parsed.hash
+    ) {
+      return null;
+    }
+
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
 
 function errorMessage(error: unknown): string {
   if (error && typeof error === "object" && "message" in error) {
@@ -149,6 +183,8 @@ export async function updateMyStore(
     address?: string;
     city?: string;
     mapUrl?: string;
+    logoUrl?: string;
+    coverUrl?: string;
   },
 ): Promise<ActionResult> {
   if (!isSupabaseConfigured()) {
@@ -171,50 +207,106 @@ export async function updateMyStore(
     return { ok: false, error: "Mağaza məlumatı tapılmadı." };
   }
 
-  const { data: membership, error: membershipError } = await supabase
-    .from("store_members")
-    .select("id")
-    .eq("store_id", normalizedStoreId)
-    .eq("user_id", user.id)
-    .eq("role", "owner")
-    .limit(1)
-    .maybeSingle();
+  const { data: canEditStore, error: membershipError } = await supabase.rpc(
+    "marktx_store_member_has_role",
+    {
+      p_store_id: normalizedStoreId,
+      p_user_id: user.id,
+      p_allowed_roles: ["owner"],
+    },
+  );
 
   if (membershipError) {
     return { ok: false, error: STORE_EDIT_PERMISSION_MESSAGE };
   }
 
-  if (!membership) {
+  if (canEditStore !== true) {
     return { ok: false, error: STORE_EDIT_PERMISSION_MESSAGE };
   }
 
+  const logoUrl = input.logoUrl
+    ? validateStoreImageUrl(input.logoUrl, user.id, normalizedStoreId, "logo")
+    : undefined;
+  const coverUrl = input.coverUrl
+    ? validateStoreImageUrl(input.coverUrl, user.id, normalizedStoreId, "cover")
+    : undefined;
+
+  if ((input.logoUrl && !logoUrl) || (input.coverUrl && !coverUrl)) {
+    return { ok: false, error: STORE_IMAGE_INVALID_MESSAGE };
+  }
+
+  const { data: currentStore, error: currentStoreError } = await supabase
+    .from("public_store_profiles")
+    .select("id, slug")
+    .eq("id", normalizedStoreId)
+    .maybeSingle();
+
+  if (currentStoreError || !currentStore) {
+    return { ok: false, error: STORE_EDIT_PERMISSION_MESSAGE };
+  }
+
+  const update: {
+    name: string;
+    description: string | null;
+    contact_phone: string | null;
+    whatsapp_phone: string | null;
+    address: string | null;
+    city: string | null;
+    map_url: string | null;
+    logo_url?: string;
+    cover_url?: string;
+  } = {
+    name: input.name.trim(),
+    description: input.description?.trim() || null,
+    contact_phone: input.contactPhone?.trim() || null,
+    whatsapp_phone: input.whatsappPhone?.trim() || null,
+    address: input.address?.trim() || null,
+    city: input.city?.trim() || null,
+    map_url: input.mapUrl?.trim() || null,
+  };
+
+  if (logoUrl) update.logo_url = logoUrl;
+  if (coverUrl) update.cover_url = coverUrl;
+
   // RLS: yalnız exact store_members owner üzvlüyü update edə bilər.
   // Həssas sahələr (owner_id, status, store_code) trigger ilə qorunur.
-  const { data: updatedStore, error } = await supabase
+  const { error, count } = await supabase
     .from("stores")
-    .update({
-      name: input.name.trim(),
-      description: input.description?.trim() || null,
-      contact_phone: input.contactPhone?.trim() || null,
-      whatsapp_phone: input.whatsappPhone?.trim() || null,
-      address: input.address?.trim() || null,
-      city: input.city?.trim() || null,
-      map_url: input.mapUrl?.trim() || null,
-    })
+    .update(update, { count: "exact" })
     .eq("id", normalizedStoreId)
-    .eq("status", "claimed")
-    .select("id")
-    .maybeSingle();
+    .eq("status", "claimed");
 
   if (error) {
     return { ok: false, error: errorMessage(error) };
   }
 
-  if (!updatedStore) {
+  if (count !== 1) {
     return { ok: false, error: STORE_EDIT_PERMISSION_MESSAGE };
   }
 
+  if (logoUrl || coverUrl) {
+    const { data: persistedStore, error: persistedStoreError } = await supabase
+      .from("public_store_profiles")
+      .select("logo_url, cover_url")
+      .eq("id", normalizedStoreId)
+      .maybeSingle();
+
+    if (
+      persistedStoreError ||
+      !persistedStore ||
+      (logoUrl && persistedStore.logo_url !== logoUrl) ||
+      (coverUrl && persistedStore.cover_url !== coverUrl)
+    ) {
+      return {
+        ok: false,
+        error: "Mağaza şəkilləri yadda saxlanmadı. Yenidən cəhd edin.",
+      };
+    }
+  }
+
   revalidatePath("/account/store");
+  revalidatePath("/stores");
+  revalidatePath(`/stores/${currentStore.slug}`);
   return { ok: true };
 }
 

@@ -14,6 +14,7 @@ import { StorePhoneReveal } from "@/components/store/StorePhoneReveal";
 import type { ListingSearchFilters } from "@/lib/listings/search";
 import {
   getPublicStoreBySlug,
+  getPublicStoreDescription,
   getStoreActiveListingCategories,
   getStoreActiveListingsPage,
 } from "@/lib/stores/stores";
@@ -67,7 +68,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return createPageMetadata({
     title: store.name,
-    description: store.description ?? `${store.name} — MarktX mağaza səhifəsi.`,
+    description: getPublicStoreDescription(store.description) ?? `${store.name} — MarktX mağaza səhifəsi.`,
     path: `/stores/${store.slug}`,
   });
 }
@@ -92,6 +93,7 @@ export default async function PublicStorePage({ params, searchParams }: Props) {
     (category) => category.slug === requestedCategory,
   );
   const selectedCategorySlug = selectedCategory?.slug ?? "";
+  const description = getPublicStoreDescription(store.description);
   const listingPage = await getStoreActiveListingsPage(store.id, {
     page,
     categoryId: selectedCategory?.id,
@@ -143,8 +145,8 @@ export default async function PublicStorePage({ params, searchParams }: Props) {
                   {store.category ? <span>{store.category}</span> : <span>Mağaza</span>}
                 </div>
 
-                {store.description ? (
-                  <p className="max-w-2xl text-sm leading-relaxed text-brand-text">{store.description}</p>
+                {description ? (
+                  <p className="max-w-2xl text-sm leading-relaxed text-brand-text">{description}</p>
                 ) : null}
 
                 {store.city || store.address ? (

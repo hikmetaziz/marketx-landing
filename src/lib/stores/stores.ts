@@ -45,6 +45,18 @@ const STORE_LISTING_SELECT =
 
 const STORE_LISTING_PAGE_SIZE = 24;
 const ACTIVE_LISTING_BATCH_SIZE = 1_000;
+const LEGACY_STORE_DESCRIPTION_MARKERS = ["İş günləri:", "İş saatları:", "E-poçt:"];
+
+export function getPublicStoreDescription(description: string | null): string | null {
+  const normalized = description?.trim();
+  if (!normalized) return null;
+
+  const markerIndexes = LEGACY_STORE_DESCRIPTION_MARKERS.map((marker) => normalized.indexOf(marker))
+    .filter((index) => index >= 0);
+  const endIndex = markerIndexes.length > 0 ? Math.min(...markerIndexes) : normalized.length;
+
+  return normalized.slice(0, endIndex).trim() || null;
+}
 
 async function getClient() {
   if (!isSupabaseConfigured()) {

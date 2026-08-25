@@ -2,7 +2,7 @@ import { ArrowRight, MapPin, Package, Store as StoreIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import type { PublicStoreSummary } from "@/lib/stores/stores";
+import { getPublicStoreDescription, type PublicStoreSummary } from "@/lib/stores/stores";
 
 type PublicStoreCardProps = {
   store: PublicStoreSummary;
@@ -14,6 +14,7 @@ function formatStoreLocation(store: PublicStoreSummary): string | null {
 
 export function PublicStoreCard({ store }: PublicStoreCardProps) {
   const location = formatStoreLocation(store);
+  const description = getPublicStoreDescription(store.description);
 
   return (
     <article className="group flex h-full flex-col rounded-2xl border border-brand-border/90 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-primary/30 hover:shadow-md">
@@ -43,9 +44,9 @@ export function PublicStoreCard({ store }: PublicStoreCardProps) {
         </div>
       </div>
 
-      {store.description ? (
+      {description ? (
         <p className="mt-4 line-clamp-2 text-sm font-semibold leading-relaxed text-brand-text">
-          {store.description}
+          {description}
         </p>
       ) : null}
 

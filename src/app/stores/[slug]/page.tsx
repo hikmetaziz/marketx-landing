@@ -11,10 +11,12 @@ import { StoreMessageButton } from "@/components/messaging/StoreMessageButton";
 import { StoreListingCategoryFilter } from "@/components/store/StoreListingCategoryFilter";
 import { StoreMapEmbed } from "@/components/store/StoreMapEmbed";
 import { StorePhoneReveal } from "@/components/store/StorePhoneReveal";
+import { StoreWorkingSchedule } from "@/components/store/StoreWorkingSchedule";
 import type { ListingSearchFilters } from "@/lib/listings/search";
 import {
   getPublicStoreBySlug,
   getPublicStoreDescription,
+  getPublicStoreSchedule,
   getStoreActiveListingCategories,
   getStoreActiveListingsPage,
 } from "@/lib/stores/stores";
@@ -87,7 +89,10 @@ export default async function PublicStorePage({ params, searchParams }: Props) {
     notFound();
   }
 
-  const categorySummary = await getStoreActiveListingCategories(store.id);
+  const [categorySummary, schedule] = await Promise.all([
+    getStoreActiveListingCategories(store.id),
+    getPublicStoreSchedule(store.id),
+  ]);
   const requestedCategory = firstParam(categoryParam).trim();
   const selectedCategory = categorySummary.categories.find(
     (category) => category.slug === requestedCategory,
@@ -155,6 +160,8 @@ export default async function PublicStorePage({ params, searchParams }: Props) {
                     <span>{[store.address, store.city].filter(Boolean).join(", ")}</span>
                   </p>
                 ) : null}
+
+                {schedule ? <StoreWorkingSchedule schedule={schedule} /> : null}
               </div>
             </div>
 

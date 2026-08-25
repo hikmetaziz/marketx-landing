@@ -14,6 +14,12 @@ export type PublicStoreSummary = PublicStoreProfile & {
   active_listing_count: number;
 };
 
+export type PublicStoreSchedule = {
+  working_days: string;
+  opening_time: string;
+  closing_time: string;
+};
+
 export type PaginatedStoreListings = {
   listings: LiveListing[];
   total: number;
@@ -127,6 +133,20 @@ export const getPublicStoreBySlug = cache(
 
     if (error || !data) return null;
     return data as PublicStoreProfile;
+  },
+);
+
+export const getPublicStoreSchedule = cache(
+  async (storeId: string): Promise<PublicStoreSchedule | null> => {
+    const supabase = await getClient();
+    if (!supabase) return null;
+
+    const { data, error } = await supabase.rpc("get_public_store_schedule", {
+      p_store_id: storeId,
+    });
+
+    if (error || !Array.isArray(data) || data.length === 0) return null;
+    return data[0] as PublicStoreSchedule;
   },
 );
 

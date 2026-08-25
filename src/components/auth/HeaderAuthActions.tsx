@@ -93,6 +93,7 @@ export function HeaderAuthActions({
   const [unreadMessageCount, setUnreadMessageCount] = useState(latestUnreadMessageCount);
   const userStoreRequestForRef = useRef<string | null>(null);
   const userStoreRequestSeqRef = useRef(0);
+  const profileDetailsRef = useRef<HTMLDetailsElement>(null);
 
   const displayName =
     (user?.user_metadata?.display_name as string | undefined) ??
@@ -119,6 +120,40 @@ export function HeaderAuthActions({
       window.removeEventListener(UNREAD_COUNT_EVENT, handleUnreadCountEvent);
     };
   }, []);
+
+  useEffect(() => {
+    if (!homepage || mobile || !userId) {
+      return;
+    }
+
+    const closeProfileMenu = () => {
+      const details = profileDetailsRef.current;
+      if (details?.open) {
+        details.open = false;
+      }
+    };
+
+    const handleOutsidePointerDown = (event: PointerEvent) => {
+      const details = profileDetailsRef.current;
+      if (details?.open && event.target instanceof Node && !details.contains(event.target)) {
+        closeProfileMenu();
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeProfileMenu();
+      }
+    };
+
+    document.addEventListener("pointerdown", handleOutsidePointerDown);
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.removeEventListener("pointerdown", handleOutsidePointerDown);
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [homepage, mobile, userId]);
 
   const loadUserStore = useCallback(() => {
     const currentSupabase = supabase;
@@ -313,6 +348,7 @@ export function HeaderAuthActions({
             </>
           ) : (
             <details
+              ref={profileDetailsRef}
               className="group relative"
               onToggle={(event) => {
                 if (event.currentTarget.open) {

@@ -8,15 +8,20 @@ import { LiveListingCard } from "@/components/listings/LiveListingCard";
 import { ListingPagination } from "@/components/listings/ListingPagination";
 import { OpenInAppLink } from "@/components/listings/OpenInAppLink";
 import { StoreMessageButton } from "@/components/messaging/StoreMessageButton";
+import { StoreListingCategoryFilter } from "@/components/store/StoreListingCategoryFilter";
 import { StoreMapEmbed } from "@/components/store/StoreMapEmbed";
 import { StorePhoneReveal } from "@/components/store/StorePhoneReveal";
 import type { ListingSearchFilters } from "@/lib/listings/search";
-import { getPublicStoreBySlug, getStoreActiveListingsPage } from "@/lib/stores/stores";
+import {
+  getPublicStoreBySlug,
+  getStoreActiveListingCategories,
+  getStoreActiveListingsPage,
+} from "@/lib/stores/stores";
 import { createPageMetadata } from "@/lib/seo";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ page?: string | string[] }>;
+  searchParams: Promise<{ category?: string | string[]; page?: string | string[] }>;
 };
 
 function firstParam(value: string | string[] | undefined): string {
@@ -32,10 +37,10 @@ function parsePageParam(value: string | string[] | undefined): number {
   return Math.max(1, Math.round(page));
 }
 
-function storePaginationFilters(page: number, limit: number): ListingSearchFilters {
+function storePaginationFilters(page: number, limit: number, category: string): ListingSearchFilters {
   return {
     q: "",
-    category: "",
+    category,
     subcategory: "",
     city: "",
     condition: "",
@@ -73,7 +78,7 @@ function normalizePhoneForLink(phone: string): string {
 
 export default async function PublicStorePage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const { page: pageParam } = await searchParams;
+  const { category: categoryParam, page: pageParam } = await searchParams;
   const page = parsePageParam(pageParam);
   const store = await getPublicStoreBySlug(slug);
 
@@ -81,7 +86,16 @@ export default async function PublicStorePage({ params, searchParams }: Props) {
     notFound();
   }
 
-  const listingPage = await getStoreActiveListingsPage(store.id, { page });
+  const categorySummary = await getStoreActiveListingCategories(store.id);
+  const requestedCategory = firstParam(categoryParam).trim();
+  const selectedCategory = categorySummary.categories.find(
+    (category) => category.slug === requestedCategory,
+  );
+  const selectedCategorySlug = selectedCategory?.slug ?? "";
+  const listingPage = await getStoreActiveListingsPage(store.id, {
+    page,
+    categoryId: selectedCategory?.id,
+  });
   const listings = listingPage.listings;
 
   const whatsappPhone = store.whatsapp_phone
@@ -121,26 +135,28 @@ export default async function PublicStorePage({ params, searchParams }: Props) {
               </span>
 
               <div className="min-w-0 space-y-2">
-              <div className="flex items-center gap-2 text-sm text-brand-muted">
-                <StoreIcon className="h-4 w-4 shrink-0" aria-hidden />
-                {store.category ? <span>{store.category}</span> : <span>Mağaza</span>}
-              </div>
+                <h2 className="text-lg font-extrabold leading-tight text-brand-text md:text-xl">
+                  {store.name}
+                </h2>
+                <div className="flex items-center gap-2 text-sm text-brand-muted">
+                  <StoreIcon className="h-4 w-4 shrink-0" aria-hidden />
+                  {store.category ? <span>{store.category}</span> : <span>Mağaza</span>}
+                </div>
 
-              {store.city || store.address ? (
-                <p className="flex items-start gap-2 text-sm text-brand-muted">
-                  <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
-                  <span>{[store.address, store.city].filter(Boolean).join(", ")}</span>
-                </p>
-              ) : null}
+                {store.description ? (
+                  <p className="max-w-2xl text-sm leading-relaxed text-brand-text">{store.description}</p>
+                ) : null}
 
-              {store.description ? (
-                <p className="max-w-2xl text-sm leading-relaxed text-brand-text">{store.description}</p>
-              ) : null}
+                {store.city || store.address ? (
+                  <p className="flex items-start gap-2 text-sm text-brand-muted">
+                    <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+                    <span>{[store.address, store.city].filter(Boolean).join(", ")}</span>
+                  </p>
+                ) : null}
               </div>
             </div>
 
             <div className="flex w-full flex-col gap-2.5 sm:flex-row md:w-auto">
-              <OpenInAppLink type="store" slug={store.slug} />
               <StoreMessageButton storeId={store.id} storeName={store.name} />
               {store.contact_phone ? (
                 <StorePhoneReveal
@@ -158,6 +174,7 @@ export default async function PublicStorePage({ params, searchParams }: Props) {
                   WhatsApp
                 </a>
               ) : null}
+              <OpenInAppLink type="store" slug={store.slug} />
             </div>
           </div>
         </section>
@@ -170,26 +187,53 @@ export default async function PublicStorePage({ params, searchParams }: Props) {
         />
 
         <section className="space-y-4">
-          <h2 className="text-lg font-bold text-brand-text">Elanlar ({listingPage.total})</h2>
-          {listings.length === 0 ? (
-            <div className="rounded-2xl border border-brand-border/90 bg-brand-surface/60 p-6 text-center">
-              <p className="text-sm text-brand-muted">Hazırda aktiv elan yoxdur.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-2.5 md:gap-4 lg:grid-cols-3 xl:grid-cols-4">
-                {listings.map((listing) => (
-                  <LiveListingCard key={listing.id} listing={listing} mobileCompact />
-                ))}
-              </div>
-              <ListingPagination
-                filters={storePaginationFilters(listingPage.page, listingPage.limit)}
-                total={listingPage.total}
-                totalPages={listingPage.totalPages}
+          <h2 className="text-lg font-bold text-brand-text">Mağazanın elanları</h2>
+          <div
+            className={`grid min-w-0 gap-4 ${
+              categorySummary.categories.length > 0
+                ? "md:grid-cols-[minmax(160px,220px)_minmax(0,1fr)] md:gap-6"
+                : ""
+            }`}
+          >
+            {categorySummary.categories.length > 0 ? (
+              <StoreListingCategoryFilter
                 basePath={`/stores/${store.slug}`}
+                total={categorySummary.total}
+                categories={categorySummary.categories.map(({ slug: categorySlug, name, count }) => ({
+                  slug: categorySlug,
+                  name,
+                  count,
+                }))}
+                selectedCategory={selectedCategorySlug}
               />
+            ) : null}
+
+            <div className="min-w-0 space-y-4">
+              {listings.length === 0 ? (
+                <div className="rounded-xl border border-brand-border/90 bg-brand-surface/60 p-6 text-center">
+                  <p className="text-sm text-brand-muted">Hazırda aktiv elan yoxdur.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-3 xl:grid-cols-4 xl:gap-4">
+                    {listings.map((listing) => (
+                      <LiveListingCard key={listing.id} listing={listing} mobileCompact />
+                    ))}
+                  </div>
+                  <ListingPagination
+                    filters={storePaginationFilters(
+                      listingPage.page,
+                      listingPage.limit,
+                      selectedCategorySlug,
+                    )}
+                    total={listingPage.total}
+                    totalPages={listingPage.totalPages}
+                    basePath={`/stores/${store.slug}`}
+                  />
+                </>
+              )}
             </div>
-          )}
+          </div>
         </section>
       </div>
     </PageShell>

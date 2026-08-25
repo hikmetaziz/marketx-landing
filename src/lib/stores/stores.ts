@@ -22,6 +22,18 @@ export type PaginatedStoreListings = {
   totalPages: number;
 };
 
+export type StoreListingCategory = {
+  id: string;
+  slug: string;
+  name: string;
+  count: number;
+};
+
+export type StoreListingCategorySummary = {
+  total: number;
+  categories: StoreListingCategory[];
+};
+
 const STORE_SELECT =
   "id, store_code, name, slug, description, category, category_id, contact_phone, whatsapp_phone, address, city, map_url, logo_url, cover_url, owner_id, status, created_by, created_at, updated_at";
 
@@ -32,6 +44,7 @@ const STORE_LISTING_SELECT =
   "id, user_id, slug, title, description, price, category, city, condition, status, image_url, image_urls, delivery_available, view_count, created_at, updated_at";
 
 const STORE_LISTING_PAGE_SIZE = 24;
+const ACTIVE_LISTING_BATCH_SIZE = 1_000;
 
 async function getClient() {
   if (!isSupabaseConfigured()) {
@@ -126,17 +139,25 @@ export async function getPublicStores(limit?: number): Promise<PublicStoreSummar
 
   const storeIds = stores.map((store) => store.id);
   const counts = new Map<string, number>();
-  const { data: listingRows } = await supabase
-    .from("listings")
-    .select("store_id")
-    .in("store_id", storeIds)
-    .eq("status", "active")
-    .not("slug", "is", null);
+  for (let from = 0; ; from += ACTIVE_LISTING_BATCH_SIZE) {
+    const { data: listingRows, error: listingError } = await supabase
+      .from("listings")
+      .select("id, store_id")
+      .in("store_id", storeIds)
+      .eq("status", "active")
+      .not("slug", "is", null)
+      .order("id", { ascending: true })
+      .range(from, from + ACTIVE_LISTING_BATCH_SIZE - 1);
 
-  for (const row of (listingRows ?? []) as Array<{ store_id: string | null }>) {
-    if (row.store_id) {
-      counts.set(row.store_id, (counts.get(row.store_id) ?? 0) + 1);
+    if (listingError || !listingRows) break;
+
+    for (const row of listingRows as Array<{ id: string; store_id: string | null }>) {
+      if (row.store_id) {
+        counts.set(row.store_id, (counts.get(row.store_id) ?? 0) + 1);
+      }
     }
+
+    if (listingRows.length < ACTIVE_LISTING_BATCH_SIZE) break;
   }
 
   return stores.map((store) => ({
@@ -163,20 +184,110 @@ export async function getStoreActiveListings(storeId: string): Promise<LiveListi
   return page.listings;
 }
 
+export async function getStoreActiveListingCategories(
+  storeId: string,
+): Promise<StoreListingCategorySummary> {
+  const supabase = await getClient();
+  if (!supabase) return { total: 0, categories: [] };
+
+  const rows: Array<{ category_id: string | null }> = [];
+
+  for (let from = 0; ; from += ACTIVE_LISTING_BATCH_SIZE) {
+    const { data, error } = await supabase
+      .from("listings")
+      .select("id, category_id")
+      .eq("store_id", storeId)
+      .eq("status", "active")
+      .not("slug", "is", null)
+      .order("id", { ascending: true })
+      .range(from, from + ACTIVE_LISTING_BATCH_SIZE - 1);
+
+    if (error || !data) return { total: 0, categories: [] };
+
+    rows.push(...(data as Array<{ id: string; category_id: string | null }>));
+    if (data.length < ACTIVE_LISTING_BATCH_SIZE) break;
+  }
+
+  const categoryIds = [...new Set(rows.map((row) => row.category_id).filter((id): id is string => Boolean(id)))];
+  if (categoryIds.length === 0) {
+    return { total: rows.length, categories: [] };
+  }
+
+  const { data: taxonomyRows, error: taxonomyError } = await supabase
+    .from("categories")
+    .select("id, slug, name")
+    .in("id", categoryIds)
+    .eq("is_active", true);
+
+  if (taxonomyError || !taxonomyRows) {
+    return { total: rows.length, categories: [] };
+  }
+
+  const taxonomy = taxonomyRows as Array<{ id: string; slug: string; name: string }>;
+  const slugCounts = new Map<string, number>();
+  for (const category of taxonomy) {
+    const slug = category.slug.trim();
+    if (slug) slugCounts.set(slug, (slugCounts.get(slug) ?? 0) + 1);
+  }
+
+  const taxonomyById = new Map(
+    taxonomy
+      .filter(
+        (category) =>
+          category.slug.trim() &&
+          category.name.trim() &&
+          slugCounts.get(category.slug.trim()) === 1,
+      )
+      .map((category) => [category.id, category]),
+  );
+  const grouped = new Map<string, StoreListingCategory>();
+
+  for (const row of rows) {
+    if (!row.category_id) continue;
+    const category = taxonomyById.get(row.category_id);
+    if (!category) continue;
+
+    const existing = grouped.get(category.id);
+    if (existing) {
+      existing.count += 1;
+      continue;
+    }
+
+    grouped.set(category.id, {
+      id: category.id,
+      slug: category.slug.trim(),
+      name: category.name.trim(),
+      count: 1,
+    });
+  }
+
+  return {
+    total: rows.length,
+    categories: [...grouped.values()]
+      .sort((left, right) => left.name.localeCompare(right.name, "az")),
+  };
+}
+
 export async function getStoreActiveListingsPage(
   storeId: string,
-  options: { page?: number; limit?: number } = {},
+  options: { page?: number; limit?: number; categoryId?: string } = {},
 ): Promise<PaginatedStoreListings> {
   const pagination = getStoreListingPagination(options.page, options.limit);
   const supabase = await getClient();
   if (!supabase) return emptyStoreListingsPage(pagination.page, pagination.limit);
 
-  const { data, error, count } = await supabase
+  let query = supabase
     .from("listings")
     .select(STORE_LISTING_SELECT, { count: "exact" })
     .eq("store_id", storeId)
     .eq("status", "active")
-    .not("slug", "is", null)
+    .not("slug", "is", null);
+
+  if (options.categoryId) {
+    query = query.eq("category_id", options.categoryId);
+  }
+
+  const { data, error, count } = await query
     .order("created_at", { ascending: false })
     .order("id", { ascending: false })
     .range(pagination.from, pagination.to);

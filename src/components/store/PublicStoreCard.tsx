@@ -2,19 +2,19 @@ import { ArrowRight, MapPin, Package, Store as StoreIcon } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 
-import { StorePhoneReveal } from "@/components/store/StorePhoneReveal";
-import type { PublicStoreSummary } from "@/lib/stores/stores";
+import { getPublicStoreDescription, type PublicStoreSummary } from "@/lib/stores/stores";
 
 type PublicStoreCardProps = {
   store: PublicStoreSummary;
 };
 
 function formatStoreLocation(store: PublicStoreSummary): string | null {
-  return [store.address, store.city].filter(Boolean).join(", ") || null;
+  return store.city?.trim() || store.address?.trim() || null;
 }
 
 export function PublicStoreCard({ store }: PublicStoreCardProps) {
   const location = formatStoreLocation(store);
+  const description = getPublicStoreDescription(store.description);
 
   return (
     <article className="group flex h-full flex-col rounded-2xl border border-brand-border/90 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-brand-primary/30 hover:shadow-md">
@@ -26,7 +26,7 @@ export function PublicStoreCard({ store }: PublicStoreCardProps) {
               alt={`${store.name} logo`}
               fill
               sizes="48px"
-              className="bg-white object-contain"
+              className="bg-white object-cover"
             />
           ) : (
             <StoreIcon className="h-5 w-5" aria-hidden />
@@ -44,8 +44,10 @@ export function PublicStoreCard({ store }: PublicStoreCardProps) {
         </div>
       </div>
 
-      {store.description ? (
-        <p className="mt-4 line-clamp-3 text-sm leading-relaxed text-brand-muted">{store.description}</p>
+      {description ? (
+        <p className="mt-4 line-clamp-2 text-sm font-semibold leading-relaxed text-brand-text">
+          {description}
+        </p>
       ) : null}
 
       <div className="mt-4 space-y-2 text-sm text-brand-muted">
@@ -61,20 +63,15 @@ export function PublicStoreCard({ store }: PublicStoreCardProps) {
         </p>
       </div>
 
-      {store.contact_phone ? (
-        <StorePhoneReveal
-          phone={store.contact_phone}
-          className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-primary-dark"
-        />
-      ) : null}
-
-      <Link
-        href={`/stores/${store.slug}`}
-        className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-brand-primary transition-colors group-hover:text-brand-primary-dark"
-      >
-        Mağazaya bax
-        <ArrowRight className="h-4 w-4" aria-hidden />
-      </Link>
+      <div className="mt-auto pt-5">
+        <Link
+          href={`/stores/${store.slug}`}
+          className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-brand-primary px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-brand-primary-dark"
+        >
+          Mağazaya bax
+          <ArrowRight className="h-4 w-4" aria-hidden />
+        </Link>
+      </div>
     </article>
   );
 }

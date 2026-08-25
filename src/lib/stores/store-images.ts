@@ -1,5 +1,4 @@
 import {
-  compressImageFile,
   isSupportedListingImageFile,
   LISTING_IMAGE_ACCEPT,
 } from "@/lib/listings/upload";
@@ -13,23 +12,21 @@ export type StoreImageKind = "logo" | "cover";
 
 const STORE_IMAGE_REQUIREMENTS: Record<
   StoreImageKind,
-  { minWidth: number; minHeight: number; aspectRatio: number; label: string }
+  { width: number; height: number; label: string }
 > = {
   logo: {
-    minWidth: 500,
-    minHeight: 500,
-    aspectRatio: 1,
-    label: "Logo kvadrat və ən az 500×500 px olmalıdır.",
+    width: 500,
+    height: 500,
+    label: "Logo 500×500 px olmalıdır.",
   },
   cover: {
-    minWidth: 1600,
-    minHeight: 320,
-    aspectRatio: 5,
-    label: "Örtük 5:1 formatında və ən az 1600×320 px olmalıdır.",
+    width: 1600,
+    height: 320,
+    label: "Örtük 1600×320 px olmalıdır.",
   },
 };
 
-function validateStoreImageFile(file: File): void {
+export function validateStoreImageSource(file: File): void {
   if (!isSupportedListingImageFile(file)) {
     throw new Error("Dəstəklənməyən şəkil formatıdır. JPG, PNG və ya WebP seçin.");
   }
@@ -43,7 +40,7 @@ export async function validateStoreImage(
   kind: StoreImageKind,
   file: File,
 ): Promise<void> {
-  validateStoreImageFile(file);
+  validateStoreImageSource(file);
 
   let bitmap: ImageBitmap;
   try {
@@ -54,12 +51,9 @@ export async function validateStoreImage(
 
   try {
     const requirement = STORE_IMAGE_REQUIREMENTS[kind];
-    const aspectRatio = bitmap.width / bitmap.height;
-
     if (
-      bitmap.width < requirement.minWidth ||
-      bitmap.height < requirement.minHeight ||
-      Math.abs(aspectRatio - requirement.aspectRatio) > 0.02
+      bitmap.width !== requirement.width ||
+      bitmap.height !== requirement.height
     ) {
       throw new Error(requirement.label);
     }
@@ -119,6 +113,10 @@ export async function uploadStoreImage(
 ): Promise<{ publicUrl: string; path: string; userId: string }> {
   await validateStoreImage(kind, file);
 
+  if (file.type !== "image/jpeg") {
+    throw new Error("Hazırlanmış mağaza şəkli JPG formatında olmalıdır.");
+  }
+
   const supabase = createClient();
   const {
     data: { user },
@@ -129,13 +127,10 @@ export async function uploadStoreImage(
     throw new Error("Şəkil yükləmək üçün yenidən daxil olun.");
   }
 
-  const maxWidth = kind === "logo" ? 800 : 1600;
-  const { blob, contentType, ext } = await compressImageFile(file, maxWidth);
-  const path = `${user.id}/stores/${storeId}/${kind}-${crypto.randomUUID()}.${ext}`;
-
+  const path = `${user.id}/stores/${storeId}/${kind}-${crypto.randomUUID()}.jpg`;
   const { error: uploadError } = await supabase.storage
     .from("listing-images")
-    .upload(path, blob, { contentType, upsert: false });
+    .upload(path, file, { contentType: file.type, upsert: false });
 
   if (uploadError) {
     throw new Error("Şəkil yüklənmədi. Yenidən cəhd edin.");

@@ -4,12 +4,15 @@ import { Loader2, Pencil, Trash2 } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import {
+  useCallback,
   useEffect,
   useState,
   useTransition,
 } from "react";
 
 import { deleteMyStore, updateMyStore } from "@/app/account/store/actions";
+import { StoreImageEditor } from "@/components/store/StoreImageEditor";
+import { suggestStoreCoverBackground } from "@/lib/stores/store-image-crop";
 import { readStoreMapFieldsFromForm } from "@/lib/stores/store-map-fields";
 import {
   getManagedStoreImagePath,
@@ -17,6 +20,7 @@ import {
   STORE_IMAGE_ACCEPT,
   uploadStoreImage,
   validateStoreImage,
+  validateStoreImageSource,
 } from "@/lib/stores/store-images";
 import type { Store } from "@/types/store";
 
@@ -31,6 +35,13 @@ type StoreFormValues = {
   address: string;
   mapUrl: string;
   description: string;
+};
+
+type StoreImageEditorSource = {
+  kind: "logo" | "cover";
+  sourceUrl: string;
+  sourceName: string;
+  initialBackgroundColor: string;
 };
 
 function getInitialValues(store: Store): StoreFormValues {
@@ -145,8 +156,8 @@ function StoreImageField({
       ) : null}
       <p className="mt-2 text-xs leading-5 text-brand-muted">
         {isLogo
-          ? "Kvadrat şəkil · ən az 500×500 px · JPG, PNG və ya WebP · maksimum 10 MB"
-          : "5:1 üfüqi şəkil · ən az 1600×320 px · JPG, PNG və ya WebP · maksimum 10 MB"}
+          ? "JPG, PNG və ya WebP · maksimum 10 MB · 500×500 hazırlanacaq"
+          : "JPG, PNG və ya WebP · maksimum 10 MB · 1600×320 hazırlanacaq"}
       </p>
       {error ? (
         <p className="mt-1 text-xs font-medium text-red-700">{error}</p>
@@ -188,6 +199,7 @@ function StoreDashboardFormContent({
   const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
   const [logoError, setLogoError] = useState("");
   const [coverError, setCoverError] = useState("");
+  const [editorSource, setEditorSource] = useState<StoreImageEditorSource | null>(null);
 
   useEffect(() => {
     return () => {
@@ -200,6 +212,12 @@ function StoreDashboardFormContent({
       if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
     };
   }, [coverPreviewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (editorSource) URL.revokeObjectURL(editorSource.sourceUrl);
+    };
+  }, [editorSource]);
 
   useEffect(() => {
     if (!isDeleteModalOpen) return;
@@ -240,6 +258,7 @@ function StoreDashboardFormContent({
     setCoverPreviewUrl(null);
     setLogoError("");
     setCoverError("");
+    setEditorSource(null);
     setErrorMessage("");
     setSuccessMessage("");
     setIsEditing(true);
@@ -255,41 +274,72 @@ function StoreDashboardFormContent({
     setCoverPreviewUrl(null);
     setLogoError("");
     setCoverError("");
+    setEditorSource(null);
     setErrorMessage("");
     setSuccessMessage("");
     setIsEditing(false);
   };
 
+  const closeImageEditor = useCallback(() => {
+    setEditorSource(null);
+  }, []);
+
   const handleStoreImageChange = async (
     kind: "logo" | "cover",
     file: File | null,
   ) => {
-    const setFile = kind === "logo" ? setLogoFile : setCoverFile;
-    const setPreviewUrl =
-      kind === "logo" ? setLogoPreviewUrl : setCoverPreviewUrl;
     const setImageError = kind === "logo" ? setLogoError : setCoverError;
 
     setImageError("");
 
-    if (!file) {
-      setFile(null);
-      setPreviewUrl(null);
-      return;
-    }
+    if (!file) return;
 
     try {
-      await validateStoreImage(kind, file);
-      setFile(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      validateStoreImageSource(file);
+      const sourceUrl = URL.createObjectURL(file);
+      let initialBackgroundColor = "#f3f4f6";
+
+      try {
+        if (kind === "cover") {
+          initialBackgroundColor = await suggestStoreCoverBackground(sourceUrl);
+        }
+
+        setEditorSource({
+          kind,
+          sourceUrl,
+          sourceName: file.name,
+          initialBackgroundColor,
+        });
+      } catch (error) {
+        URL.revokeObjectURL(sourceUrl);
+        throw error;
+      }
     } catch (error) {
-      setFile(null);
-      setPreviewUrl(null);
       setImageError(
         error instanceof Error
           ? error.message
           : "Şəkil yoxlanmadı. Yenidən cəhd edin.",
       );
     }
+  };
+
+  const applyEditedStoreImage = async (file: File) => {
+    if (!editorSource) return;
+
+    await validateStoreImage(editorSource.kind, file);
+    const previewUrl = URL.createObjectURL(file);
+
+    if (editorSource.kind === "logo") {
+      setLogoFile(file);
+      setLogoPreviewUrl(previewUrl);
+      setLogoError("");
+    } else {
+      setCoverFile(file);
+      setCoverPreviewUrl(previewUrl);
+      setCoverError("");
+    }
+
+    setEditorSource(null);
   };
 
 
@@ -795,6 +845,17 @@ function StoreDashboardFormContent({
             </div>
           </div>
         </div>
+      ) : null}
+
+      {editorSource ? (
+        <StoreImageEditor
+          sourceUrl={editorSource.sourceUrl}
+          sourceName={editorSource.sourceName}
+          kind={editorSource.kind}
+          initialBackgroundColor={editorSource.initialBackgroundColor}
+          onCancel={closeImageEditor}
+          onApply={applyEditedStoreImage}
+        />
       ) : null}
     </form>
   );

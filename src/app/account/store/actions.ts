@@ -245,68 +245,62 @@ export async function updateMyStore(
     return { ok: false, error: STORE_EDIT_PERMISSION_MESSAGE };
   }
 
-  const update: {
-    name: string;
-    description: string | null;
-    contact_phone: string | null;
-    whatsapp_phone: string | null;
-    address: string | null;
-    city: string | null;
-    map_url: string | null;
-    logo_url?: string;
-    cover_url?: string;
-  } = {
-    name: input.name.trim(),
-    description: input.description?.trim() || null,
-    contact_phone: input.contactPhone?.trim() || null,
-    whatsapp_phone: input.whatsappPhone?.trim() || null,
-    address: input.address?.trim() || null,
-    city: input.city?.trim() || null,
-    map_url: input.mapUrl?.trim() || null,
-  };
-
-  if (logoUrl) update.logo_url = logoUrl;
-  if (coverUrl) update.cover_url = coverUrl;
-
-  // RLS: yalnız exact store_members owner üzvlüyü update edə bilər.
-  // Həssas sahələr (owner_id, status, store_code) trigger ilə qorunur.
-  const { error, count } = await supabase
-    .from("stores")
-    .update(update, { count: "exact" })
-    .eq("id", normalizedStoreId)
-    .eq("status", "claimed");
+  const { data: updatedStoreData, error } = await supabase.rpc(
+    "update_my_claimed_store",
+    {
+      p_store_id: normalizedStoreId,
+      p_name: input.name.trim(),
+      p_description: input.description?.trim() || null,
+      p_contact_phone: input.contactPhone?.trim() || null,
+      p_whatsapp_phone: input.whatsappPhone?.trim() || null,
+      p_address: input.address?.trim() || null,
+      p_city: input.city?.trim() || null,
+      p_map_url: input.mapUrl?.trim() || null,
+      p_logo_url: logoUrl ?? null,
+      p_cover_url: coverUrl ?? null,
+    },
+  );
 
   if (error) {
+    const lowerMessage = error.message.toLowerCase();
+    if (
+      lowerMessage.includes("not authorized") ||
+      lowerMessage.includes("not authenticated")
+    ) {
+      return { ok: false, error: STORE_EDIT_PERMISSION_MESSAGE };
+    }
+
+    if (
+      lowerMessage.includes("invalid store logo") ||
+      lowerMessage.includes("invalid store cover")
+    ) {
+      return { ok: false, error: STORE_IMAGE_INVALID_MESSAGE };
+    }
+
     return { ok: false, error: errorMessage(error) };
   }
 
-  if (count !== 1) {
+  const updatedStore = Array.isArray(updatedStoreData)
+    ? updatedStoreData[0]
+    : updatedStoreData;
+
+  if (!updatedStore) {
     return { ok: false, error: STORE_EDIT_PERMISSION_MESSAGE };
   }
 
-  if (logoUrl || coverUrl) {
-    const { data: persistedStore, error: persistedStoreError } = await supabase
-      .from("public_store_profiles")
-      .select("logo_url, cover_url")
-      .eq("id", normalizedStoreId)
-      .maybeSingle();
-
-    if (
-      persistedStoreError ||
-      !persistedStore ||
-      (logoUrl && persistedStore.logo_url !== logoUrl) ||
-      (coverUrl && persistedStore.cover_url !== coverUrl)
-    ) {
-      return {
-        ok: false,
-        error: "Mağaza şəkilləri yadda saxlanmadı. Yenidən cəhd edin.",
-      };
-    }
+  if (
+    (logoUrl && updatedStore.logo_url !== logoUrl) ||
+    (coverUrl && updatedStore.cover_url !== coverUrl)
+  ) {
+    return {
+      ok: false,
+      error: "Mağaza şəkilləri yadda saxlanmadı. Yenidən cəhd edin.",
+    };
   }
 
   revalidatePath("/account/store");
   revalidatePath("/stores");
-  revalidatePath(`/stores/${currentStore.slug}`);
+  revalidatePath(`/stores/${updatedStore.slug || currentStore.slug}`);
   return { ok: true };
 }
 

@@ -12,9 +12,11 @@ import {
 import { deleteMyStore, updateMyStore } from "@/app/account/store/actions";
 import { readStoreMapFieldsFromForm } from "@/lib/stores/store-map-fields";
 import {
+  getManagedStoreImagePath,
   removeUploadedStoreImages,
   STORE_IMAGE_ACCEPT,
   uploadStoreImage,
+  validateStoreImage,
 } from "@/lib/stores/store-images";
 import type { Store } from "@/types/store";
 
@@ -41,6 +43,16 @@ function getInitialValues(store: Store): StoreFormValues {
     mapUrl: store.map_url ?? "",
     description: store.description ?? "",
   };
+}
+
+async function removeStoreImagesSafely(paths: string[]): Promise<void> {
+  if (paths.length === 0) return;
+
+  try {
+    await removeUploadedStoreImages(paths);
+  } catch (error) {
+    console.error("Store image cleanup failed", error);
+  }
 }
 
 function ReadonlyField({
@@ -70,35 +82,41 @@ function ReadonlyField({
 function StoreImageField({
   label,
   currentUrl,
+  previewUrl,
   file,
   kind,
+  error,
   disabled,
   onChange,
 }: {
   label: string;
   currentUrl: string | null;
+  previewUrl: string | null;
   file: File | null;
   kind: "logo" | "cover";
+  error: string;
   disabled: boolean;
-  onChange: (file: File | null) => void;
+  onChange: (file: File | null) => Promise<void>;
 }) {
   const isLogo = kind === "logo";
+  const imageUrl = previewUrl ?? currentUrl;
 
   return (
     <div className="rounded-xl border border-brand-border/80 p-3.5">
       <p className="text-sm font-semibold text-brand-text">{label}</p>
       <div
         className={`relative mt-2 overflow-hidden rounded-lg border border-brand-border bg-brand-surface/40 ${
-          isLogo ? "h-28 w-28" : "h-32 w-full"
+          isLogo ? "aspect-square w-28" : "aspect-[5/1] w-full"
         }`}
       >
-        {currentUrl ? (
+        {imageUrl ? (
           <Image
-            src={currentUrl}
+            src={imageUrl}
             alt={`${label} önizləməsi`}
             fill
             sizes={isLogo ? "112px" : "(max-width: 767px) 100vw, 360px"}
-            className={isLogo ? "bg-white object-contain" : "object-cover"}
+            unoptimized={imageUrl.startsWith("blob:")}
+            className="bg-white object-contain"
           />
         ) : (
           <span className="flex h-full items-center justify-center px-3 text-center text-xs text-brand-muted">
@@ -112,7 +130,11 @@ function StoreImageField({
           type="file"
           accept={STORE_IMAGE_ACCEPT}
           disabled={disabled}
-          onChange={(event) => onChange(event.target.files?.[0] ?? null)}
+          onChange={(event) => {
+            const selectedFile = event.currentTarget.files?.[0] ?? null;
+            event.currentTarget.value = "";
+            void onChange(selectedFile);
+          }}
           className="sr-only"
         />
       </label>
@@ -120,6 +142,14 @@ function StoreImageField({
         <p className="mt-2 truncate text-xs text-brand-muted" title={file.name}>
           {file.name}
         </p>
+      ) : null}
+      <p className="mt-2 text-xs leading-5 text-brand-muted">
+        {isLogo
+          ? "Kvadrat şəkil · ən az 500×500 px · JPG, PNG və ya WebP · maksimum 10 MB"
+          : "5:1 üfüqi şəkil · ən az 1600×320 px · JPG, PNG və ya WebP · maksimum 10 MB"}
+      </p>
+      {error ? (
+        <p className="mt-1 text-xs font-medium text-red-700">{error}</p>
       ) : null}
     </div>
   );
@@ -154,6 +184,22 @@ function StoreDashboardFormContent({
   const [successMessage, setSuccessMessage] = useState("");
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  const [coverPreviewUrl, setCoverPreviewUrl] = useState<string | null>(null);
+  const [logoError, setLogoError] = useState("");
+  const [coverError, setCoverError] = useState("");
+
+  useEffect(() => {
+    return () => {
+      if (logoPreviewUrl) URL.revokeObjectURL(logoPreviewUrl);
+    };
+  }, [logoPreviewUrl]);
+
+  useEffect(() => {
+    return () => {
+      if (coverPreviewUrl) URL.revokeObjectURL(coverPreviewUrl);
+    };
+  }, [coverPreviewUrl]);
 
   useEffect(() => {
     if (!isDeleteModalOpen) return;
@@ -190,6 +236,10 @@ function StoreDashboardFormContent({
     setValues(getInitialValues(store));
     setLogoFile(null);
     setCoverFile(null);
+    setLogoPreviewUrl(null);
+    setCoverPreviewUrl(null);
+    setLogoError("");
+    setCoverError("");
     setErrorMessage("");
     setSuccessMessage("");
     setIsEditing(true);
@@ -201,9 +251,45 @@ function StoreDashboardFormContent({
     setValues(getInitialValues(store));
     setLogoFile(null);
     setCoverFile(null);
+    setLogoPreviewUrl(null);
+    setCoverPreviewUrl(null);
+    setLogoError("");
+    setCoverError("");
     setErrorMessage("");
     setSuccessMessage("");
     setIsEditing(false);
+  };
+
+  const handleStoreImageChange = async (
+    kind: "logo" | "cover",
+    file: File | null,
+  ) => {
+    const setFile = kind === "logo" ? setLogoFile : setCoverFile;
+    const setPreviewUrl =
+      kind === "logo" ? setLogoPreviewUrl : setCoverPreviewUrl;
+    const setImageError = kind === "logo" ? setLogoError : setCoverError;
+
+    setImageError("");
+
+    if (!file) {
+      setFile(null);
+      setPreviewUrl(null);
+      return;
+    }
+
+    try {
+      await validateStoreImage(kind, file);
+      setFile(file);
+      setPreviewUrl(URL.createObjectURL(file));
+    } catch (error) {
+      setFile(null);
+      setPreviewUrl(null);
+      setImageError(
+        error instanceof Error
+          ? error.message
+          : "Şəkil yoxlanmadı. Yenidən cəhd edin.",
+      );
+    }
   };
 
 
@@ -294,20 +380,45 @@ function StoreDashboardFormContent({
         });
 
         if (!result.ok) {
-          await removeUploadedStoreImages(uploadedPaths);
+          await removeStoreImagesSafely(uploadedPaths);
           setErrorMessage(result.error);
           return;
         }
 
+        const replacedManagedPaths = [
+          logoUpload
+            ? getManagedStoreImagePath(
+                store.logo_url,
+                logoUpload.userId,
+                store.id,
+                "logo",
+              )
+            : null,
+          coverUpload
+            ? getManagedStoreImagePath(
+                store.cover_url,
+                coverUpload.userId,
+                store.id,
+                "cover",
+              )
+            : null,
+        ].filter((path): path is string => Boolean(path));
+
+        await removeStoreImagesSafely(replacedManagedPaths);
+
         setLogoFile(null);
         setCoverFile(null);
+        setLogoPreviewUrl(null);
+        setCoverPreviewUrl(null);
+        setLogoError("");
+        setCoverError("");
         setSuccessMessage(
           "Mağaza məlumatları yeniləndi.",
         );
         setIsEditing(false);
         router.refresh();
       } catch (error) {
-        await removeUploadedStoreImages(uploadedPaths);
+        await removeStoreImagesSafely(uploadedPaths);
         console.error("Store update failed", error);
 
         setErrorMessage(
@@ -412,19 +523,23 @@ function StoreDashboardFormContent({
             <StoreImageField
               label="Logo"
               currentUrl={store.logo_url}
+              previewUrl={logoPreviewUrl}
               file={logoFile}
               kind="logo"
+              error={logoError}
               disabled={isPending}
-              onChange={setLogoFile}
+              onChange={(file) => handleStoreImageChange("logo", file)}
             />
 
             <StoreImageField
               label="Örtük şəkli"
               currentUrl={store.cover_url}
+              previewUrl={coverPreviewUrl}
               file={coverFile}
               kind="cover"
+              error={coverError}
               disabled={isPending}
-              onChange={setCoverFile}
+              onChange={(file) => handleStoreImageChange("cover", file)}
             />
 
             <label className="block md:col-span-2">

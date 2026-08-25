@@ -114,13 +114,13 @@ export default async function PublicStorePage({ params, searchParams }: Props) {
       <div className="space-y-4 md:space-y-6">
         <section className="overflow-hidden rounded-xl border border-brand-border/90 bg-white md:rounded-2xl">
           {store.cover_url ? (
-            <div className="relative h-32 border-b border-brand-border/80 bg-brand-surface sm:h-40 md:h-56">
+            <div className="relative aspect-[5/1] w-full border-b border-brand-border/80 bg-brand-surface">
               <Image
                 src={store.cover_url}
                 alt={`${store.name} örtük şəkli`}
                 fill
                 sizes="(max-width: 768px) 100vw, 896px"
-                className="object-cover"
+                className="object-contain"
               />
             </div>
           ) : null}

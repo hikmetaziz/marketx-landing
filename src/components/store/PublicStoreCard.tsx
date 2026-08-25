@@ -26,7 +26,7 @@ export function PublicStoreCard({ store }: PublicStoreCardProps) {
               alt={`${store.name} logo`}
               fill
               sizes="48px"
-              className="bg-white object-contain"
+              className="bg-white object-cover"
             />
           ) : (
             <StoreIcon className="h-5 w-5" aria-hidden />

@@ -134,7 +134,7 @@ export default async function PublicStorePage({ params, searchParams }: Props) {
                     alt={`${store.name} logo`}
                     fill
                     sizes="64px"
-                    className="bg-white object-contain"
+                    className="bg-white object-cover"
                   />
                 ) : (
                   <StoreIcon className="h-6 w-6" aria-hidden />

@@ -91,8 +91,6 @@ const AZERBAIJAN_CITY_LABELS = [
   "Zərdab",
 ] as const;
 
-const cityCollator = new Intl.Collator("az");
-
 export function cityToSlug(value: string): string {
   return value
     .trim()
@@ -115,8 +113,7 @@ export const AZERBAIJAN_CITY_OPTIONS: readonly CityOption[] = AZERBAIJAN_CITY_LA
     label,
     value: label,
     slug: cityToSlug(label),
-  }))
-  .sort((left, right) => cityCollator.compare(left.label, right.label));
+  }));
 
 export const CITY_FILTER_ALL_OPTION: CityFilterAllOption = {
   label: "Bütün şəhərlər",

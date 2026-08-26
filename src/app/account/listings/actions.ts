@@ -224,7 +224,7 @@ export async function duplicateMyListing(listingId: string): Promise<DuplicateLi
   const { data: listing, error: fetchError } = await supabase
     .from("listings")
     .select(
-      "id, user_id, store_id, title, price, category, category_id, subcategory_id, attributes, city, condition, description, delivery_available, image_url, image_urls",
+      "id, user_id, store_id, title, price, category, category_id, subcategory_id, attributes, city, condition, description, search_keywords, delivery_available, image_url, image_urls",
     )
     .eq("id", listingId)
     .maybeSingle();
@@ -275,6 +275,7 @@ export async function duplicateMyListing(listingId: string): Promise<DuplicateLi
     price_type: "fixed",
     delivery_type: listing.delivery_available ? "both" : "pickup",
     description: listing.description,
+    search_keywords: listing.search_keywords,
     delivery_available: listing.delivery_available,
     image_url: listing.image_url,
     image_urls: listing.image_urls,
@@ -307,6 +308,7 @@ export async function duplicateMyListing(listingId: string): Promise<DuplicateLi
       city: duplicatePayload.city,
       condition: duplicatePayload.condition,
       description: duplicatePayload.description,
+      search_keywords: duplicatePayload.search_keywords,
       image_url: duplicatePayload.image_url,
       image_urls: duplicatePayload.image_urls,
     };
@@ -546,6 +548,7 @@ export async function updateMyListing(
     price_type: "fixed",
     delivery_type: parsed.data.deliveryAvailable ? "both" : "pickup",
     description: parsed.data.description,
+    search_keywords: parsed.data.searchKeywords,
     delivery_available: parsed.data.deliveryAvailable,
     image_url: urls[0] ?? null,
     image_urls: urls.length > 0 ? urls : null,
@@ -603,6 +606,7 @@ export async function updateMyListing(
       city: basePayload.city,
       condition: basePayload.condition,
       description: basePayload.description,
+      search_keywords: basePayload.search_keywords,
       image_url: basePayload.image_url,
       image_urls: basePayload.image_urls,
     };

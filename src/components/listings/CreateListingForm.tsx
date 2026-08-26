@@ -93,6 +93,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
   const [deliveryAvailable, setDeliveryAvailable] = useState(false);
   const [contactPhone, setContactPhone] = useState("");
   const [description, setDescription] = useState("");
+  const [searchKeywords, setSearchKeywords] = useState("");
   const [images, setImages] = useState<ImagePreview[]>([]);
   const [uploadProgressItems, setUploadProgressItems] = useState<UploadProgressItem[]>([]);
 
@@ -180,6 +181,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
     setDeliveryAvailable(false);
     setContactPhone("");
     setDescription("");
+    setSearchKeywords("");
     setImages([]);
     setUploadProgressItems([]);
     setErrorMessage("");
@@ -318,6 +320,7 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
         city,
         isNew,
         description,
+        searchKeywords,
         contactPhone,
         deliveryAvailable,
       },
@@ -675,6 +678,23 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
             placeholder="Məhsul haqqında ətraflı məlumat..."
             className="w-full resize-y rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3"
           />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-brand-text">
+            Axtarış açar sözləri
+          </label>
+          <textarea
+            value={searchKeywords}
+            onChange={(event) => setSearchKeywords(event.target.value)}
+            rows={2}
+            placeholder="kansaner, kondisoner, 12000 btu, aux"
+            aria-describedby="listing-search-keywords-help"
+            className="w-full resize-y rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3"
+          />
+          <p id="listing-search-keywords-help" className="mt-1.5 text-xs text-brand-muted">
+            Alternativ axtarış sözlərini vergül və ya yeni sətirlə ayırın. Maksimum 20 söz.
+          </p>
         </div>
 
         <div>

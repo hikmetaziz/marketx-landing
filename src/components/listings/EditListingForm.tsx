@@ -78,6 +78,7 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
   const [deliveryAvailable, setDeliveryAvailable] = useState(Boolean(listing.delivery_available));
   const [contactPhone, setContactPhone] = useState(listing.contact_phone ?? "");
   const [description, setDescription] = useState(listing.description ?? "");
+  const [searchKeywords, setSearchKeywords] = useState(listing.search_keywords);
   const [images, setImages] = useState<ImagePreview[]>(() =>
     getListingImages(listing).map((url, index) => ({
       id: `remote-${index}-${url}`,
@@ -326,6 +327,7 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
         city,
         isNew,
         description,
+        searchKeywords,
         contactPhone,
         deliveryAvailable,
       },
@@ -525,6 +527,23 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
             rows={4}
             className="w-full resize-y rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3"
           />
+        </div>
+
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-brand-text">
+            Axtarış açar sözləri
+          </label>
+          <textarea
+            value={searchKeywords}
+            onChange={(event) => setSearchKeywords(event.target.value)}
+            rows={2}
+            placeholder="kansaner, kondisoner, 12000 btu, aux"
+            aria-describedby="edit-listing-search-keywords-help"
+            className="w-full resize-y rounded-xl border border-brand-border bg-brand-surface px-3.5 py-2.5 text-brand-text outline-none focus:border-brand-primary/50 focus:ring-2 focus:ring-brand-primary/15 md:px-4 md:py-3"
+          />
+          <p id="edit-listing-search-keywords-help" className="mt-1.5 text-xs text-brand-muted">
+            Alternativ axtarış sözlərini vergül və ya yeni sətirlə ayırın. Maksimum 20 söz.
+          </p>
         </div>
 
         <div>

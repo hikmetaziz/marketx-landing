@@ -328,7 +328,7 @@ export async function searchListingsPage(filters: ListingSearchFilters): Promise
   if (filters.q.length >= 2) {
     const pattern = `%${filters.q}%`;
     query = query.or(
-      `title.ilike.${pattern},description.ilike.${pattern},category.ilike.${pattern},city.ilike.${pattern}`,
+      `title.ilike.${pattern},description.ilike.${pattern},search_keywords.ilike.${pattern},category.ilike.${pattern},city.ilike.${pattern}`,
     );
   }
 

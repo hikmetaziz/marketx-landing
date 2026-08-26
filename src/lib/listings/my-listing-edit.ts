@@ -15,6 +15,7 @@ export type EditableListing = {
   city: string;
   condition: string | null;
   description: string | null;
+  search_keywords: string;
   delivery_available: boolean | null;
   contact_phone: string | null;
   image_url: string | null;
@@ -23,7 +24,7 @@ export type EditableListing = {
 };
 
 const EDIT_SELECT =
-  "id, slug, title, price, category_id, subcategory_id, attributes, city, condition, description, delivery_available, image_url, image_urls, status, user_id, store_id";
+  "id, slug, title, price, category_id, subcategory_id, attributes, city, condition, description, search_keywords, delivery_available, image_url, image_urls, status, user_id, store_id";
 
 function parseAttributes(raw: unknown): ListingAttributeValues {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
@@ -94,6 +95,7 @@ export async function getMyListingForEdit(
       city: listing.city as string,
       condition: (listing.condition as string | null) ?? null,
       description: (listing.description as string | null) ?? null,
+      search_keywords: (listing.search_keywords as string | null) ?? "",
       delivery_available: (listing.delivery_available as boolean | null) ?? null,
       contact_phone: (contact?.contact_phone as string | null) ?? null,
       image_url: (listing.image_url as string | null) ?? null,

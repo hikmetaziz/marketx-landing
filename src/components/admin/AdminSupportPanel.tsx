@@ -278,6 +278,10 @@ function normalizeApplicationTime(value: string | null | undefined, fallback: st
   return match ? `${match[1]}:${match[2]}` : fallback;
 }
 
+function isValid24HourTime(value: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
 function parseApplicationWorkingHours(value: string | null | undefined): {
   openingTime: string;
   closingTime: string;
@@ -937,9 +941,16 @@ export function AdminSupportPanel() {
     }
 
     if (
-      newStoreForm.openingTime >=
-      newStoreForm.closingTime
+      !isValid24HourTime(newStoreForm.openingTime) ||
+      !isValid24HourTime(newStoreForm.closingTime)
     ) {
+      setCreatedStoreError(
+        "Saatları 24 saat formatında daxil edin (məsələn, 09:00 və 18:00).",
+      );
+      return;
+    }
+
+    if (newStoreForm.openingTime >= newStoreForm.closingTime) {
       setCreatedStoreError(
         "Açılış saatı bağlanış saatından əvvəl olmalıdır.",
       );
@@ -1860,7 +1871,14 @@ export function AdminSupportPanel() {
                         </span>
 
                         <input
-                          type="time"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="off"
+                          spellCheck={false}
+                          maxLength={5}
+                          pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]"
+                          placeholder="09:00"
+                          title="24 saat formatı: 09:00"
                           value={
                             newStoreForm.openingTime
                           }
@@ -1881,7 +1899,14 @@ export function AdminSupportPanel() {
                         </span>
 
                         <input
-                          type="time"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="off"
+                          spellCheck={false}
+                          maxLength={5}
+                          pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]"
+                          placeholder="18:00"
+                          title="24 saat formatı: 18:00"
                           value={
                             newStoreForm.closingTime
                           }

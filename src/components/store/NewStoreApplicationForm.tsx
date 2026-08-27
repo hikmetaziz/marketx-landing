@@ -71,6 +71,10 @@ function isValidEmail(value: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
+function isValid24HourTime(value: string) {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
 function workDayLabels(values: string[]) {
   return WORK_DAYS.filter(([value]) => values.includes(value)).map(([, label]) => label);
 }
@@ -136,6 +140,15 @@ export function NewStoreApplicationForm() {
       (!form.address.trim() || form.workingDays.length === 0 || !form.openingTime || !form.closingTime)
     ) {
       return "Ünvanı, iş günlərini və iş saatlarını daxil edin.";
+    }
+    if (
+      targetStep === 2 &&
+      (!isValid24HourTime(form.openingTime) || !isValid24HourTime(form.closingTime))
+    ) {
+      return "Saatları 24 saat formatında daxil edin. Məsələn: 09:00 və 18:00.";
+    }
+    if (targetStep === 2 && form.openingTime >= form.closingTime) {
+      return "Açılış vaxtı bağlanış vaxtından əvvəl olmalıdır.";
     }
     if (targetStep === 3) {
       if (!normalizeAzPhone(form.phone)) {
@@ -380,11 +393,35 @@ export function NewStoreApplicationForm() {
           <div className="grid gap-3 md:grid-cols-2 md:gap-4">
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold text-brand-text">Açılış vaxtı *</span>
-              <input type="time" value={form.openingTime} onChange={(event) => update("openingTime", event.target.value)} className={inputClass} />
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={5}
+                pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]"
+                placeholder="09:00"
+                title="24 saat formatı: 09:00"
+                value={form.openingTime}
+                onChange={(event) => update("openingTime", event.target.value)}
+                className={inputClass}
+              />
             </label>
             <label className="block">
               <span className="mb-1.5 block text-sm font-semibold text-brand-text">Bağlanış vaxtı *</span>
-              <input type="time" value={form.closingTime} onChange={(event) => update("closingTime", event.target.value)} className={inputClass} />
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                spellCheck={false}
+                maxLength={5}
+                pattern="(?:[01][0-9]|2[0-3]):[0-5][0-9]"
+                placeholder="18:00"
+                title="24 saat formatı: 18:00"
+                value={form.closingTime}
+                onChange={(event) => update("closingTime", event.target.value)}
+                className={inputClass}
+              />
             </label>
           </div>
         </div>

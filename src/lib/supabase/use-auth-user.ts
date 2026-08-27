@@ -127,6 +127,9 @@ function initAuthStore() {
     } = await supabase.auth.getUser();
 
     if (version !== authUpdateVersion) {
+      if (store.loading) {
+        patchStore({ loading: false });
+      }
       return;
     }
 

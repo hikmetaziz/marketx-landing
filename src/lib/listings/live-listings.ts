@@ -319,67 +319,146 @@ export async function searchListingsPage(filters: ListingSearchFilters): Promise
     return emptyPaginatedListings(pagination);
   }
 
-  let query = supabase
-    .from("listings")
-    .select(LISTING_SELECT, { count: "exact" })
-    .in("status", PUBLIC_STATUSES)
-    .not("slug", "is", null);
+  const categoryFilter = filters.category
+    ? await resolveCategoryFilter(filters.category)
+    : null;
 
-  if (filters.q.length >= 2) {
-    const pattern = `%${filters.q}%`;
-    query = query.or(
-      `title.ilike.${pattern},description.ilike.${pattern},category.ilike.${pattern},city.ilike.${pattern}`,
-    );
-  }
-
-  if (filters.category) {
-    const categoryFilter = await resolveCategoryFilter(filters.category);
-    if (!categoryFilter) {
-      return emptyPaginatedListings(pagination);
-    }
-    query = applyCategoryFilterToQuery(query, categoryFilter);
-
-    if (filters.subcategory) {
-      const subcategory = await getSubcategoryBySlug(filters.category, filters.subcategory);
-      if (!subcategory || isSyntheticCanonicalSubcategoryId(subcategory.id)) {
-        return emptyPaginatedListings(pagination);
-      }
-      query = query.eq("subcategory_id", subcategory.id);
-    }
-  }
-
-  if (filters.city) {
-    query = query.eq("city", filters.city);
-  }
-
-  if (filters.condition) {
-    query = query.eq("condition", filters.condition);
-  }
-
-  if (filters.minPrice !== null) {
-    query = query.gte("price", filters.minPrice);
-  }
-
-  if (filters.maxPrice !== null) {
-    query = query.lte("price", filters.maxPrice);
-  }
-
-  if (filters.sort === "price_asc") {
-    query = query.order("price", { ascending: true }).order("created_at", { ascending: false });
-  } else if (filters.sort === "price_desc") {
-    query = query.order("price", { ascending: false }).order("created_at", { ascending: false });
-  } else {
-    query = query.order("created_at", { ascending: false });
-  }
-
-  const { data, error, count } = await query.range(pagination.from, pagination.to);
-
-  if (error || !data) {
+  if (filters.category && !categoryFilter) {
     return emptyPaginatedListings(pagination);
   }
 
-  const listings = await toPublicListings(data as ListingRow[]);
-  return createPaginatedListings(listings, count ?? listings.length, pagination.page, pagination.limit);
+  let subcategoryId: string | null = null;
+  if (filters.category && filters.subcategory) {
+    const subcategory = await getSubcategoryBySlug(filters.category, filters.subcategory);
+    if (!subcategory || isSyntheticCanonicalSubcategoryId(subcategory.id)) {
+      return emptyPaginatedListings(pagination);
+    }
+    subcategoryId = subcategory.id;
+  }
+
+  const buildSearchOrFilter = (terms: string[]): string =>
+    terms
+      .flatMap((term) => {
+        const pattern = `%${term}%`;
+        return [
+          `title.ilike.${pattern}`,
+          `description.ilike.${pattern}`,
+          `search_keywords.ilike.${pattern}`,
+          `category.ilike.${pattern}`,
+          `city.ilike.${pattern}`,
+        ];
+      })
+      .join(",");
+
+  const buildQuery = (searchTerms: string[]) => {
+    let query = supabase
+      .from("listings")
+      .select(LISTING_SELECT, { count: "exact" })
+      .in("status", PUBLIC_STATUSES)
+      .not("slug", "is", null);
+
+    if (searchTerms.length > 0) {
+      query = query.or(buildSearchOrFilter(searchTerms));
+    }
+
+    if (categoryFilter) {
+      query = applyCategoryFilterToQuery(query, categoryFilter);
+    }
+
+    if (subcategoryId) {
+      query = query.eq("subcategory_id", subcategoryId);
+    }
+
+    if (filters.city) {
+      query = query.eq("city", filters.city);
+    }
+
+    if (filters.condition) {
+      query = query.eq("condition", filters.condition);
+    }
+
+    if (filters.minPrice !== null) {
+      query = query.gte("price", filters.minPrice);
+    }
+
+    if (filters.maxPrice !== null) {
+      query = query.lte("price", filters.maxPrice);
+    }
+
+    if (filters.sort === "price_asc") {
+      query = query.order("price", { ascending: true }).order("created_at", { ascending: false });
+    } else if (filters.sort === "price_desc") {
+      query = query.order("price", { ascending: false }).order("created_at", { ascending: false });
+    } else {
+      query = query.order("created_at", { ascending: false });
+    }
+
+    return query;
+  };
+
+  const runSearch = async (searchTerms: string[]) =>
+    buildQuery(searchTerms).range(pagination.from, pagination.to);
+
+  const primaryTerms = filters.q.length >= 2 ? [filters.q] : [];
+  const primaryResult = await runSearch(primaryTerms);
+
+  if (primaryResult.error || !primaryResult.data) {
+    return emptyPaginatedListings(pagination);
+  }
+
+  const primaryListings = await toPublicListings(primaryResult.data as ListingRow[]);
+  const primaryTotal = primaryResult.count ?? primaryListings.length;
+  const primaryPage = createPaginatedListings(
+    primaryListings,
+    primaryTotal,
+    pagination.page,
+    pagination.limit,
+  );
+
+  if (primaryTotal > 0 || filters.q.length < 3) {
+    return primaryPage;
+  }
+
+  type SearchVocabularyCandidate = {
+    normalized_term: string;
+    edit_distance: number;
+    similarity: number;
+    variant_count: number;
+  };
+
+  const { data: candidateData, error: candidateError } = await supabase.rpc(
+    "search_vocabulary_candidates",
+    {
+      query_text: filters.q,
+      max_results: 5,
+    },
+  );
+
+  if (candidateError || !candidateData) {
+    return primaryPage;
+  }
+
+  const fallbackTerms = (candidateData as SearchVocabularyCandidate[])
+    .map((candidate) => candidate.normalized_term.trim())
+    .filter((term, index, terms) => term.length > 0 && terms.indexOf(term) === index);
+
+  if (fallbackTerms.length === 0) {
+    return primaryPage;
+  }
+
+  const fallbackResult = await runSearch(fallbackTerms);
+
+  if (fallbackResult.error || !fallbackResult.data) {
+    return primaryPage;
+  }
+
+  const fallbackListings = await toPublicListings(fallbackResult.data as ListingRow[]);
+  return createPaginatedListings(
+    fallbackListings,
+    fallbackResult.count ?? fallbackListings.length,
+    pagination.page,
+    pagination.limit,
+  );
 }
 
 export async function searchListings(

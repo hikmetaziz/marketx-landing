@@ -114,6 +114,7 @@ export async function createListing(
     price_type: "fixed",
     delivery_type: parsed.data.deliveryAvailable ? "both" : "pickup",
     description: parsed.data.description,
+    search_keywords: parsed.data.searchKeywords,
     delivery_available: parsed.data.deliveryAvailable,
     ...schemaVersions,
   };
@@ -156,6 +157,7 @@ export async function createListing(
       city: basePayload.city,
       condition: basePayload.condition,
       description: basePayload.description,
+      search_keywords: basePayload.search_keywords,
     };
     const retry = await supabase.from("listings").insert(legacyPayload).select("id").single();
     inserted = retry.data;

@@ -1,6 +1,7 @@
 import { MAX_LISTING_IMAGES } from "@/constants/listings";
 import { isCityValue } from "@/lib/constants/cities";
 import { isValidContactPhone, normalizeContactPhone } from "@/lib/contact-phone";
+import { parseListingSearchKeywords } from "@/lib/listings/search-keywords";
 import { isUuid } from "@/lib/taxonomy/listing-taxonomy-utils";
 import type { ListingAttributeValues } from "@/lib/taxonomy/listing-taxonomy-types";
 
@@ -20,6 +21,7 @@ export type CreateListingInput = {
   city: string;
   condition: "Yeni" | "İşlənmiş";
   description: string | null;
+  searchKeywords: string;
   contactPhone: string | null;
   deliveryAvailable: boolean;
 };
@@ -126,6 +128,11 @@ export function parseCreateListingInput(
   const descriptionRaw = typeof input.description === "string" ? input.description.trim() : "";
   const description = descriptionRaw.length > 0 ? descriptionRaw.slice(0, DESCRIPTION_MAX) : null;
 
+  const searchKeywordsResult = parseListingSearchKeywords(input.searchKeywords);
+  if (!searchKeywordsResult.ok) {
+    return { ok: false, error: searchKeywordsResult.error };
+  }
+
   const contactPhoneRaw = typeof input.contactPhone === "string" ? input.contactPhone : "";
   if (!isValidContactPhone(contactPhoneRaw)) {
     return { ok: false, error: "Telefon düzgün deyil. Nümunə: 050 XXX XX XX" };
@@ -146,6 +153,7 @@ export function parseCreateListingInput(
       city,
       condition,
       description,
+      searchKeywords: searchKeywordsResult.value,
       contactPhone,
       deliveryAvailable,
     },

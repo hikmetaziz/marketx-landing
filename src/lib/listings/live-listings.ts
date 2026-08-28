@@ -81,7 +81,7 @@ const LISTING_SELECT =
   "id, user_id, slug, title, description, price, category, city, condition, status, image_url, image_urls, delivery_available, view_count, created_at, updated_at, store_id";
 
 const LISTING_DETAIL_EXTRA =
-  "listing_number, category_id, subcategory_id, attributes, expires_at";
+  "listing_number, category_id, subcategory_id, attributes";
 
 const LISTING_DETAIL_SELECT = `${LISTING_SELECT}, ${LISTING_DETAIL_EXTRA}`;
 

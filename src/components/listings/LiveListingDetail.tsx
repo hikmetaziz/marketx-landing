@@ -30,6 +30,7 @@ type LiveListingDetailProps = {
   sellerLabel: string;
   favoriteCount: number;
   attributeRows: Array<{ label: string; value: string }>;
+  subcategoryName?: string | null;
 };
 
 export function LiveListingDetail({
@@ -41,6 +42,7 @@ export function LiveListingDetail({
   sellerLabel,
   favoriteCount,
   attributeRows,
+  subcategoryName = null,
 }: LiveListingDetailProps) {
   useListingDetailRealtimeRefresh(listing.id);
 
@@ -56,6 +58,7 @@ export function LiveListingDetail({
   const factRows = [
     { label: "Şəhər", value: listing.city },
     { label: "Kateqoriya", value: dbCategoryToDisplay(listing.category) },
+    ...(subcategoryName ? [{ label: "Alt kateqoriya:", value: subcategoryName }] : []),
     { label: "Yeni?", value: listing.condition === "Yeni" ? "Bəli" : "Xeyr" },
     { label: "Çatdırılma?", value: listing.delivery_available ? "Bəli" : "Xeyr" },
     { label: "Tarix", value: createdAtLabel },

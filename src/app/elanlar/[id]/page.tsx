@@ -123,6 +123,11 @@ export default async function ElanDetailPage({ params }: Props) {
       listing.attributes ?? {},
       categorySchemaSnapshot,
     );
+    const subcategoryName = listing.subcategory_id
+      ? taxonomy.categories
+          .flatMap((category) => category.subcategories)
+          .find((subcategory) => subcategory.id === listing.subcategory_id)?.name ?? null
+      : null;
 
     return (
       <article className="mx-auto max-w-7xl px-4 py-5 sm:px-6 md:py-12 lg:px-8">
@@ -155,6 +160,7 @@ export default async function ElanDetailPage({ params }: Props) {
             sellerLabel={sellerLabel}
             favoriteCount={favoriteCount}
             attributeRows={attributeRows}
+            subcategoryName={subcategoryName}
           />
           <SimilarListingsSection liveListings={similarListings} />
         </div>

@@ -18,6 +18,13 @@ function linkClass(active: boolean): string {
   ].join(" ");
 }
 
+function subcategoryHref(categorySlug: string, subcategorySlug: string): string {
+  if (categorySlug === "ev-ve-bag" && subcategorySlug === "meiset-texnikasi") {
+    return "/categories/meiset-texnikasi";
+  }
+  return `/categories/${categorySlug}?sub=${subcategorySlug}`;
+}
+
 export function GroupedSubcategoryGrid({
   categorySlug,
   subcategories,
@@ -51,7 +58,7 @@ export function GroupedSubcategoryGrid({
               {group.subcategories.map((subcategory) => (
                 <Link
                   key={`${group.key}:${subcategory.slug}`}
-                  href={`${basePath}?sub=${subcategory.slug}`}
+                  href={subcategoryHref(categorySlug, subcategory.slug)}
                   className={linkClass(activeSubSlug === subcategory.slug)}
                   aria-current={activeSubSlug === subcategory.slug ? "page" : undefined}
                 >

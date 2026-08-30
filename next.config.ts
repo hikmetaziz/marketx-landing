@@ -18,6 +18,20 @@ const allowedDevOrigins = [
 
 const nextConfig: NextConfig = {
   allowedDevOrigins,
+  async redirects() {
+    return [
+      {
+        source: "/listings",
+        destination: "/elanlar",
+        permanent: true,
+      },
+      {
+        source: "/listings/:slug",
+        destination: "/elanlar/:slug",
+        permanent: true,
+      },
+    ];
+  },
   images: {
     deviceSizes: [640, 750, 828, 1080, 1200, 1672, 1920],
     qualities: [75, 80, 90],

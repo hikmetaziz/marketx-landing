@@ -3,8 +3,6 @@ import type { MetadataRoute } from "next";
 import { SITE } from "@/constants/data";
 import { getPublicListingSlugs } from "@/lib/listings/live-listings";
 import { getPublicStoreSlugs } from "@/lib/stores/stores";
-import { getCatalogueSlugs } from "@/lib/taxonomy/fetch-catalogue";
-import { getCanonicalLeafRoutes } from "@/lib/taxonomy/marktx-taxonomy";
 
 export const revalidate = 3600;
 
@@ -37,22 +35,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority,
   }));
 
-  const categorySlugs = await getCatalogueSlugs();
-
-  const categoryEntries = categorySlugs.map((slug) => ({
-    url: `${SITE.url}/categories/${slug}`,
-    lastModified,
-    changeFrequency: "weekly" as const,
-    priority: 0.75,
-  }));
-
-  const leafCategoryEntries = getCanonicalLeafRoutes().map((route) => ({
-    url: `${SITE.url}/categories/${route.categorySlug}?sub=${route.subcategorySlug}`,
-    lastModified,
-    changeFrequency: "weekly" as const,
-    priority: 0.68,
-  }));
-
   const listingEntries = listingSlugs.map(({ slug, updated_at }) => ({
     url: `${SITE.url}/elanlar/${slug}`,
     lastModified: updated_at ? new Date(updated_at) : lastModified,
@@ -67,5 +49,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.65,
   }));
 
-  return [...staticEntries, ...categoryEntries, ...leafCategoryEntries, ...listingEntries, ...storeEntries];
+  return [...staticEntries, ...listingEntries, ...storeEntries];
 }

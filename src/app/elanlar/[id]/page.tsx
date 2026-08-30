@@ -1,6 +1,6 @@
 ﻿import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 
 import { LiveListingDetail } from "@/components/listings/LiveListingDetail";
 import { SimilarListingsSection } from "@/components/listings/SimilarListingsSection";
@@ -32,6 +32,7 @@ import {
 } from "@/lib/listings/sample-listings";
 import { createPageMetadata } from "@/lib/seo";
 import { getListingManagementAccess } from "@/lib/listings/listing-management-access";
+import { isListingUuid } from "@/lib/listings/listing-url";
 import { getAuthenticatedUser } from "@/lib/supabase/session";
 import { createClient } from "@/lib/supabase/server";
 import { fetchListingTaxonomy } from "@/lib/taxonomy/fetch-listing-taxonomy";
@@ -45,6 +46,7 @@ type Props = {
 };
 
 export const dynamicParams = true;
+export const dynamic = "force-dynamic";
 
 export function generateStaticParams() {
   return getSampleListingSlugs().map((id) => ({ id }));
@@ -52,8 +54,8 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const canonicalPath = listingCanonicalPath(id);
   const listingForSeo = await getListingForSeoByIdOrSlug(id);
+  const canonicalPath = listingCanonicalPath(listingForSeo?.slug ?? id);
 
   if (listingForSeo) {
     const isPublic =
@@ -98,6 +100,10 @@ export default async function ElanDetailPage({ params }: Props) {
   const liveListing = await getListingByIdOrSlug(id);
 
   if (liveListing) {
+    if (isListingUuid(id)) {
+      permanentRedirect(listingCanonicalPath(liveListing.slug));
+    }
+
     const { listing, hasContactPhone } = await toListingDetailView(liveListing);
     const user = await getAuthenticatedUser();
     let canManage = false;
@@ -141,7 +147,10 @@ export default async function ElanDetailPage({ params }: Props) {
             imageUrl: getPrimaryListingImage(listing),
             category: listing.category,
             city: listing.city,
-            canonicalPath: listingCanonicalPath(id),
+            canonicalPath: listingCanonicalPath(listing.slug),
+            seller: listing.store
+              ? { name: listing.store.name, slug: listing.store.slug }
+              : undefined,
           })}
         />
         <Link

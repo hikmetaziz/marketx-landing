@@ -15,6 +15,10 @@ export type ListingJsonLdInput = {
   category: string;
   city: string;
   canonicalPath?: string;
+  seller?: {
+    name: string;
+    slug: string;
+  };
 };
 
 export function buildListingJsonLd(listing: ListingJsonLdInput) {
@@ -23,6 +27,16 @@ export function buildListingJsonLd(listing: ListingJsonLdInput) {
   const description =
     truncateListingDescription(listing.description) ||
     `${listing.title} — ${formatListingPrice(listing.price)}`;
+
+  const sellerName = listing.seller?.name.trim();
+  const sellerSlug = listing.seller?.slug.trim();
+  const seller = sellerName && sellerSlug
+    ? {
+        "@type": "Organization",
+        name: sellerName,
+        url: `${SITE.url}/stores/${encodeURIComponent(sellerSlug)}`,
+      }
+    : undefined;
 
   const product = {
     "@context": "https://schema.org",
@@ -41,10 +55,7 @@ export function buildListingJsonLd(listing: ListingJsonLdInput) {
           ? "https://schema.org/OutOfStock"
           : "https://schema.org/InStock",
       url: listingUrl,
-      seller: {
-        "@type": "Organization",
-        name: SITE.name,
-      },
+      ...(seller ? { seller } : {}),
     },
   };
 

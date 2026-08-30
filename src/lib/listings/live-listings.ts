@@ -34,6 +34,7 @@ export function getListingGalleryImages(listing: LiveListing): string[] {
 }
 
 const PUBLIC_STATUSES: PublicListingStatus[] = ["active", "sold"];
+const NON_PUBLIC_LISTING_SOURCES = '("sample","old_ai_draft","import_test","test")';
 
 type ListingPaginationOptions = {
   page?: number;
@@ -264,6 +265,8 @@ export async function getActiveListingsPage(
     .from("listings")
     .select(LISTING_SELECT, { count: "exact" })
     .in("status", PUBLIC_STATUSES)
+    .eq("is_sample", false)
+    .not("source", "in", NON_PUBLIC_LISTING_SOURCES)
     .not("slug", "is", null)
     .order("created_at", { ascending: false })
     .range(pagination.from, pagination.to);
@@ -302,6 +305,8 @@ export async function getFavoriteListings(userId: string): Promise<LiveListing[]
     .select(LISTING_SELECT)
     .in("id", listingIds)
     .in("status", PUBLIC_STATUSES)
+    .eq("is_sample", false)
+    .not("source", "in", NON_PUBLIC_LISTING_SOURCES)
     .not("slug", "is", null)
     .order("created_at", { ascending: false });
 
@@ -355,6 +360,8 @@ export async function searchListingsPage(filters: ListingSearchFilters): Promise
       .from("listings")
       .select(LISTING_SELECT, { count: "exact" })
       .in("status", PUBLIC_STATUSES)
+      .eq("is_sample", false)
+      .not("source", "in", NON_PUBLIC_LISTING_SOURCES)
       .not("slug", "is", null);
 
     if (searchTerms.length > 0) {
@@ -486,6 +493,8 @@ export const getListingByIdOrSlug = cache(async (idOrSlug: string): Promise<Live
     .select(LISTING_DETAIL_SELECT)
     .eq(lookupField, idOrSlug)
     .in("status", PUBLIC_STATUSES)
+    .eq("is_sample", false)
+    .not("source", "in", NON_PUBLIC_LISTING_SOURCES)
     .maybeSingle();
 
   if (error) {
@@ -494,6 +503,8 @@ export const getListingByIdOrSlug = cache(async (idOrSlug: string): Promise<Live
       .select(LISTING_SELECT)
       .eq(lookupField, idOrSlug)
       .in("status", PUBLIC_STATUSES)
+      .eq("is_sample", false)
+      .not("source", "in", NON_PUBLIC_LISTING_SOURCES)
       .maybeSingle());
   }
 
@@ -524,6 +535,8 @@ export const getListingForSeoByIdOrSlug = cache(async (idOrSlug: string): Promis
     .from("listings")
     .select(LISTING_SEO_SELECT)
     .eq(lookupField, idOrSlug)
+    .eq("is_sample", false)
+    .not("source", "in", NON_PUBLIC_LISTING_SOURCES)
     .maybeSingle();
 
   if (error || !data) {
@@ -561,6 +574,8 @@ export async function getListingsByCategorySlug(
       .from("listings")
       .select(LISTING_SELECT)
       .in("status", PUBLIC_STATUSES)
+      .eq("is_sample", false)
+      .not("source", "in", NON_PUBLIC_LISTING_SOURCES)
       .not("slug", "is", null),
     categoryFilter,
   );
@@ -618,6 +633,8 @@ export async function getListingsByCategorySlugPage(
       .from("listings")
       .select(LISTING_SELECT, { count: "exact" })
       .in("status", PUBLIC_STATUSES)
+      .eq("is_sample", false)
+      .not("source", "in", NON_PUBLIC_LISTING_SOURCES)
       .not("slug", "is", null),
     categoryFilter,
   );
@@ -663,6 +680,8 @@ export async function getSimilarListings(
     .from("listings")
     .select(LISTING_SELECT)
     .in("status", PUBLIC_STATUSES)
+    .eq("is_sample", false)
+    .not("source", "in", NON_PUBLIC_LISTING_SOURCES)
     .eq("category", category)
     .neq("slug", excludeSlug)
     .not("slug", "is", null)
@@ -701,6 +720,8 @@ export async function getPublicListingSlugs(): Promise<Array<{ slug: string; upd
     .from("listings")
     .select("slug, updated_at, image_url, image_urls")
     .in("status", PUBLIC_STATUSES)
+    .eq("is_sample", false)
+    .not("source", "in", NON_PUBLIC_LISTING_SOURCES)
     .not("slug", "is", null)
     .order("created_at", { ascending: false });
 

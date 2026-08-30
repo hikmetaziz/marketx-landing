@@ -1,7 +1,7 @@
 export const SITE = {
   name: "MarktX",
   domain: "marketx.az",
-  url: "https://marketx.az",
+  url: "https://www.marketx.az",
   contactEmail: "info@marketx.az",
   location: "Bakı, Azərbaycan",
   legalScope: "MarktX veb-saytı",

@@ -8,6 +8,7 @@ import { getOrCreateCustomerSupportConversation, sendConversationMessage } from 
 import { CUSTOMER_SUPPORT_TOPICS, type CustomerSupportTopic } from "@/lib/messaging-contract/contract";
 import {
   buildSupportInitialMessage,
+  removeSupportAttachments,
   SUPPORT_ATTACHMENT_ACCEPT,
   SUPPORT_ATTACHMENT_MAX_FILES,
   uploadSupportAttachments,
@@ -97,12 +98,14 @@ export function SupportStartPanel() {
       return;
     }
 
-    const uploadResult = files.length > 0 ? await uploadSupportAttachments(user.id, result.conversationId, files) : { urls: [], errors: [] };
+    const uploadResult = files.length > 0
+      ? await uploadSupportAttachments(user.id, result.conversationId, files)
+      : { references: [], paths: [], errors: [] };
     const message = buildSupportInitialMessage({
       topicLabel: CUSTOMER_TOPIC_LABELS[topic],
       subject: cleanSubject,
       details: cleanDetails,
-      attachmentUrls: uploadResult.urls,
+      attachmentReferences: uploadResult.references,
       uploadErrors: uploadResult.errors,
     });
 
@@ -110,6 +113,7 @@ export function SupportStartPanel() {
 
     setPending(false);
     if (messageResult.error) {
+      await removeSupportAttachments(uploadResult.paths);
       setError(messageResult.error);
       return;
     }

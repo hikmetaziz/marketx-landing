@@ -9,6 +9,7 @@ import { fetchStoreConversations, getOrCreateStoreSupportConversation, sendConve
 import { STORE_SUPPORT_TOPICS, type StoreSupportTopic } from "@/lib/messaging-contract/contract";
 import {
   buildSupportInitialMessage,
+  removeSupportAttachments,
   SUPPORT_ATTACHMENT_ACCEPT,
   SUPPORT_ATTACHMENT_MAX_FILES,
   uploadSupportAttachments,
@@ -167,18 +168,21 @@ export function StoreMessagingPanel({ storeId }: { storeId: string }) {
         return;
       }
 
-      const uploadResult = files.length > 0 ? await uploadSupportAttachments(user.id, result.conversationId, files) : { urls: [], errors: [] };
+      const uploadResult = files.length > 0
+        ? await uploadSupportAttachments(user.id, result.conversationId, files)
+        : { references: [], paths: [], errors: [] };
       const message = buildSupportInitialMessage({
         topicLabel: STORE_TOPIC_LABELS[topic],
         subject: cleanSubject,
         details: cleanDetails,
-        attachmentUrls: uploadResult.urls,
+        attachmentReferences: uploadResult.references,
         uploadErrors: uploadResult.errors,
       });
 
       const messageResult = await sendConversationMessage(supabase, result.conversationId, message);
 
       if (messageResult.error) {
+        await removeSupportAttachments(uploadResult.paths);
         setError(messageResult.error);
         return;
       }

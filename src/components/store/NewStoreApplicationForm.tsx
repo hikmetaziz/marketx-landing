@@ -8,6 +8,7 @@ import { AZERBAIJAN_CITY_OPTIONS } from "@/lib/constants/cities";
 import { normalizeAzPhone } from "@/lib/contact-phone";
 import { sendConversationMessage } from "@/lib/messaging";
 import {
+  removeSupportAttachments,
   SUPPORT_ATTACHMENT_ACCEPT,
   uploadSupportAttachments,
 } from "@/lib/messaging/support-attachments";
@@ -257,23 +258,26 @@ export function NewStoreApplicationForm() {
     const [logoUpload, coverUpload] = await Promise.all([
       logo
         ? uploadSupportAttachments(user.id, conversationId, [logo])
-        : Promise.resolve({ urls: [], errors: [] }),
+        : Promise.resolve({ references: [], paths: [], errors: [] }),
       cover
         ? uploadSupportAttachments(user.id, conversationId, [cover])
-        : Promise.resolve({ urls: [], errors: [] }),
+        : Promise.resolve({ references: [], paths: [], errors: [] }),
     ]);
 
-    const logoUrl = logo ? (logoUpload.urls[0] ?? null) : null;
-    const coverUrl = cover ? (coverUpload.urls[0] ?? null) : null;
+    let logoReference = logo ? (logoUpload.references[0] ?? null) : null;
+    let coverReference = cover ? (coverUpload.references[0] ?? null) : null;
 
-    if (logoUrl || coverUrl) {
-      const { error: assetError } = await supabase.rpc("update_my_store_application_assets", {
+    if (logoReference || coverReference) {
+      const { error: assetError } = await supabase.rpc("update_my_store_application_attachment_refs", {
         p_application_id: applicationId,
-        p_logo_url: logoUrl,
-        p_cover_url: coverUrl,
+        p_logo_reference: logoReference,
+        p_cover_reference: coverReference,
       });
 
       if (assetError) {
+        await removeSupportAttachments([...logoUpload.paths, ...coverUpload.paths]);
+        logoReference = null;
+        coverReference = null;
         console.error("Store application asset persistence failed", {
           code: assetError.code,
           message: assetError.message,
@@ -284,15 +288,26 @@ export function NewStoreApplicationForm() {
     }
 
     const attachmentLines = [
-      logoUrl ? `Logo: ${logoUrl}` : null,
-      coverUrl ? `Örtük şəkli: ${coverUrl}` : null,
+      logoReference ? `Logo: ${logoReference}` : null,
+      coverReference ? `Örtük şəkli: ${coverReference}` : null,
       logoUpload.errors.length || coverUpload.errors.length
         ? "Qeyd: Seçilmiş şəkillərdən biri yüklənmədi."
         : null,
     ].filter((line): line is string => Boolean(line));
 
     if (attachmentLines.length > 0) {
-      await sendConversationMessage(supabase, conversationId, attachmentLines.join("\n"));
+      const messageResult = await sendConversationMessage(
+        supabase,
+        conversationId,
+        attachmentLines.join("\n"),
+      );
+
+      if (messageResult.error) {
+        await removeSupportAttachments([...logoUpload.paths, ...coverUpload.paths]);
+        setPending(false);
+        setError(messageResult.error);
+        return;
+      }
     }
 
     router.push(`/account/messages/${conversationId}`);

@@ -1,15 +1,30 @@
 import { createClient } from "@/lib/supabase/client";
 import { compressImageFile, LISTING_IMAGE_ACCEPT } from "@/lib/listings/upload";
 import { mapMessagingError } from "@/lib/messaging/errors";
+import {
+  buildSupportAttachmentReference,
+  isSupportAttachmentPath,
+  SUPPORT_ATTACHMENTS_BUCKET,
+} from "@/lib/messaging/support-attachment-references";
 
 export const SUPPORT_ATTACHMENT_ACCEPT = LISTING_IMAGE_ACCEPT;
 export const SUPPORT_ATTACHMENT_MAX_FILES = 3;
+
+export type SupportAttachmentUploadResult = {
+  references: string[];
+  paths: string[];
+  errors: string[];
+};
+
+function createAttachmentUuid(): string {
+  return globalThis.crypto.randomUUID();
+}
 
 export function buildSupportInitialMessage(input: {
   topicLabel: string;
   subject: string;
   details: string;
-  attachmentUrls?: string[];
+  attachmentReferences?: string[];
   uploadErrors?: string[];
 }): string {
   const lines = [
@@ -20,10 +35,10 @@ export function buildSupportInitialMessage(input: {
     input.details.trim(),
   ];
 
-  if (input.attachmentUrls?.length) {
+  if (input.attachmentReferences?.length) {
     lines.push("", "Şəkillər:");
-    input.attachmentUrls.forEach((url, index) => {
-      lines.push(`${index + 1}. ${url}`);
+    input.attachmentReferences.forEach((reference, index) => {
+      lines.push(`${index + 1}. ${reference}`);
     });
   }
 
@@ -38,9 +53,10 @@ export async function uploadSupportAttachments(
   userId: string,
   conversationId: string,
   files: File[],
-): Promise<{ urls: string[]; errors: string[] }> {
+): Promise<SupportAttachmentUploadResult> {
   const supabase = createClient();
-  const urls: string[] = [];
+  const references: string[] = [];
+  const paths: string[] = [];
   const errors: string[] = [];
   const selected = files.slice(0, SUPPORT_ATTACHMENT_MAX_FILES);
 
@@ -48,11 +64,11 @@ export async function uploadSupportAttachments(
     const file = selected[index];
     try {
       const { blob, contentType, ext } = await compressImageFile(file, 1280);
-      const token = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now()}-${index}`;
-      const path = `${userId}/support/${conversationId}/${token}.${ext}`;
+      const token = createAttachmentUuid();
+      const path = `${conversationId}/${userId}/${token}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
-        .from("listing-images")
+        .from(SUPPORT_ATTACHMENTS_BUCKET)
         .upload(path, blob, { contentType, upsert: false });
 
       if (uploadError) {
@@ -60,12 +76,27 @@ export async function uploadSupportAttachments(
         continue;
       }
 
-      const { data } = supabase.storage.from("listing-images").getPublicUrl(path);
-      urls.push(data.publicUrl);
+      const reference = buildSupportAttachmentReference(path);
+      if (!reference) {
+        await supabase.storage.from(SUPPORT_ATTACHMENTS_BUCKET).remove([path]);
+        errors.push("Şəkil yüklənmədi. Yenidən cəhd edin.");
+        continue;
+      }
+
+      references.push(reference);
+      paths.push(path);
     } catch (error) {
       errors.push(mapMessagingError(error, "upload_attachment").message);
     }
   }
 
-  return { urls, errors };
+  return { references, paths, errors };
+}
+
+export async function removeSupportAttachments(paths: string[]): Promise<void> {
+  const uniquePaths = [...new Set(paths.filter(isSupportAttachmentPath))];
+  if (uniquePaths.length === 0) return;
+
+  const supabase = createClient();
+  await supabase.storage.from(SUPPORT_ATTACHMENTS_BUCKET).remove(uniquePaths);
 }

@@ -4,6 +4,7 @@ import { Loader2, MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { ConversationActionsMenu } from "@/components/messaging/ConversationActionsMenu";
 import { dispatchMessageReadStateChanged } from "@/components/messaging/MessageNotificationHost";
@@ -41,6 +42,13 @@ import {
   isMessagingAbortError,
   mapMessagingError,
 } from "@/lib/messaging/errors";
+import {
+  extractSupportAttachmentReferences,
+  stripSupportAttachmentReferences,
+  SUPPORT_ATTACHMENTS_BUCKET,
+  SUPPORT_ATTACHMENT_SIGNED_URL_TTL_SECONDS,
+  supportAttachmentReferenceToPath,
+} from "@/lib/messaging/support-attachment-references";
 import { isSupabaseConfigured } from "@/lib/supabase/client";
 import { useAuthUser } from "@/lib/supabase/use-auth-user";
 import type { ConversationDetail, Message, StoreApplication } from "@/types/message";
@@ -48,6 +56,49 @@ import type { ConversationDetail, Message, StoreApplication } from "@/types/mess
 type ChatPanelProps = {
   conversationId: string;
 };
+
+function PrivateSupportAttachmentGallery({
+  body,
+  supabase,
+}: {
+  body: string;
+  supabase: SupabaseClient;
+}) {
+  const [signedUrls, setSignedUrls] = useState<string[]>([]);
+
+  useEffect(() => {
+    let active = true;
+    const paths = extractSupportAttachmentReferences(body)
+      .map(supportAttachmentReferenceToPath)
+      .filter((path): path is string => Boolean(path));
+
+    void Promise.all(
+      paths.map(async (path) => {
+        const { data, error } = await supabase.storage
+          .from(SUPPORT_ATTACHMENTS_BUCKET)
+          .createSignedUrl(path, SUPPORT_ATTACHMENT_SIGNED_URL_TTL_SECONDS);
+        return error ? null : data.signedUrl;
+      }),
+    ).then((urls) => {
+      if (active) setSignedUrls(urls.filter((url): url is string => Boolean(url)));
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [body, supabase]);
+
+  return (
+    <div className="mt-2 grid max-w-sm grid-cols-2 gap-2">
+      {signedUrls.map((url, index) => (
+        <a key={url} href={url} target="_blank" rel="noreferrer" className="overflow-hidden rounded-lg border border-current/15">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={url} alt={`Dəstək əlavəsi ${index + 1}`} className="aspect-square h-auto w-full object-cover" />
+        </a>
+      ))}
+    </div>
+  );
+}
 
 const CLOSED_READ_ONLY_MESSAGE = "Bu söhbət bağlanıb. Yeni mesaj göndərmək mümkün deyil.";
 const LEGACY_READ_ONLY_MESSAGE = "Bu köhnə yazışma yalnız oxuma rejimindədir.";
@@ -264,13 +315,16 @@ function StoreApplicationInfoCard({
   body,
   createdAt,
   status,
+  supabase,
 }: {
   application: StoreApplication | null;
   body: string;
   createdAt: string;
   status: string;
+  supabase: SupabaseClient;
 }) {
   const payload = parseStoreApplicationPayload(body);
+  const attachmentReferences = extractSupportAttachmentReferences(body);
   const fields = [
     { label: "Mağaza adı", value: application?.store_name ?? payload["Mağaza adı"] },
     { label: "Kateqoriya", value: application?.category_name ?? payload.Kateqoriya },
@@ -305,6 +359,9 @@ function StoreApplicationInfoCard({
           );
         })}
       </dl>
+      {attachmentReferences.length > 0 ? (
+        <PrivateSupportAttachmentGallery body={body} supabase={supabase} />
+      ) : null}
       <p className="mt-3 text-xs text-brand-muted">
         Göndərilib: {formatListingRelativeDate(effectiveCreatedAt)}
       </p>
@@ -992,7 +1049,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
     );
   }
 
-  if (!conversation || !user) {
+  if (!conversation || !user || !supabase) {
     return (
       <div className="rounded-xl border border-brand-border/90 bg-brand-surface/60 p-5 text-center md:rounded-2xl md:p-8">
         <p className="text-sm font-semibold text-red-600">{errorMessage || "Söhbət tapılmadı"}</p>
@@ -1100,6 +1157,7 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
                     body={message.body}
                     createdAt={message.created_at}
                     status={conversation.status}
+                    supabase={supabase}
                   />
                 </div>
               );
@@ -1114,6 +1172,8 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
             const displayBody = hasStoreClaimAction
               ? message.body.split(STORE_CLAIM_ACTION_MARKER).join("").trim()
               : message.body;
+            const displayText = stripSupportAttachmentReferences(displayBody);
+            const attachmentReferences = extractSupportAttachmentReferences(displayBody);
             const showStoreClaimAction =
               hasStoreClaimAction &&
               !mine &&
@@ -1167,8 +1227,11 @@ export function ChatPanel({ conversationId }: ChatPanelProps) {
                       <div className="flex items-start gap-2">
                         <div className="min-w-0 flex-1">
                           <p className={`whitespace-pre-wrap text-sm leading-relaxed ${deleted ? "italic opacity-75" : ""}`}>
-                            {deleted ? "Mesaj silindi" : displayBody}
+                            {deleted ? "Mesaj silindi" : displayText}
                           </p>
+                          {!deleted && attachmentReferences.length > 0 ? (
+                            <PrivateSupportAttachmentGallery key={displayBody} body={displayBody} supabase={supabase} />
+                          ) : null}
                           {showStoreClaimAction ? (
                             <button
                               type="button"

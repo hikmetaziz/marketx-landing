@@ -5,6 +5,10 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/supabase/admin-session";
 import { createClient } from "@/lib/supabase/server";
 import { normalizeAzPhone } from "@/lib/contact-phone";
+import {
+  SUPPORT_ATTACHMENTS_BUCKET,
+  supportAttachmentReferenceToPath,
+} from "@/lib/messaging/support-attachment-references";
 
 type ActionResult = { ok: true } | { ok: false; error: string };
 type CreateStoreResult =
@@ -123,12 +127,46 @@ function readStoreApplicationImageUrl(line: string, label: string): string | nul
     return null;
   }
 
+  if (supportAttachmentReferenceToPath(value)) {
+    return value;
+  }
+
   try {
     const url = new URL(value);
     return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : null;
   } catch {
     return null;
   }
+}
+
+async function resolveStoreApplicationImageUrl(
+  supabase: SupabaseServerClient,
+  source: string,
+  storeId: string,
+  kind: "logo" | "cover",
+): Promise<{ url: string | null; uploadedPath: string | null }> {
+  const privatePath = supportAttachmentReferenceToPath(source);
+  if (!privatePath) return { url: source, uploadedPath: null };
+
+  const { data: authData, error: authError } = await supabase.auth.getUser();
+  if (authError || !authData.user) return { url: null, uploadedPath: null };
+
+  const { data: file, error: downloadError } = await supabase.storage
+    .from(SUPPORT_ATTACHMENTS_BUCKET)
+    .download(privatePath);
+  if (downloadError || !file) return { url: null, uploadedPath: null };
+
+  const fileName = privatePath.split("/").pop();
+  if (!fileName) return { url: null, uploadedPath: null };
+
+  const publicPath = `${authData.user.id}/stores/${storeId}/${kind}-${fileName}`;
+  const { error: uploadError } = await supabase.storage
+    .from("listing-images")
+    .upload(publicPath, file, { contentType: file.type || undefined, upsert: false });
+  if (uploadError) return { url: null, uploadedPath: null };
+
+  const { data } = supabase.storage.from("listing-images").getPublicUrl(publicPath);
+  return { url: data.publicUrl, uploadedPath: publicPath };
 }
 
 function parseStoreApplicationImageUrls(body: string): StoreApplicationImageUrls {
@@ -216,13 +254,18 @@ async function persistStoreApplicationImages(
   }
 
   const update: { logo_url?: string; cover_url?: string } = {};
+  const uploadedPaths: string[] = [];
 
   if (imageUrls.logoUrl && !store?.logo_url) {
-    update.logo_url = imageUrls.logoUrl;
+    const promoted = await resolveStoreApplicationImageUrl(supabase, imageUrls.logoUrl, storeId, "logo");
+    if (promoted.url) update.logo_url = promoted.url;
+    if (promoted.uploadedPath) uploadedPaths.push(promoted.uploadedPath);
   }
 
   if (imageUrls.coverUrl && !store?.cover_url) {
-    update.cover_url = imageUrls.coverUrl;
+    const promoted = await resolveStoreApplicationImageUrl(supabase, imageUrls.coverUrl, storeId, "cover");
+    if (promoted.url) update.cover_url = promoted.url;
+    if (promoted.uploadedPath) uploadedPaths.push(promoted.uploadedPath);
   }
 
   if (Object.keys(update).length === 0) {
@@ -235,6 +278,9 @@ async function persistStoreApplicationImages(
     .eq("id", storeId);
 
   if (updateError) {
+    if (uploadedPaths.length > 0) {
+      await supabase.storage.from("listing-images").remove(uploadedPaths);
+    }
     console.error("store application image persistence failed", {
       storeId,
       code: updateError.code,

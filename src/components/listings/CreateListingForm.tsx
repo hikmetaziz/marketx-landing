@@ -27,6 +27,10 @@ import {
   getCategorySchemaSelection,
   getResolvedPhotoLimit,
 } from "@/lib/category-schema/resolve-category-schema";
+import {
+  getEvBagPresentationSubcategories,
+  resolveEvBagMeisetAliasCategoryId,
+} from "@/lib/taxonomy/ev-bag-presentation";
 import { isSyntheticCanonicalSubcategoryId } from "@/lib/taxonomy/marktx-taxonomy";
 import { getAttributeDefinitions } from "@/lib/taxonomy/listing-taxonomy-utils";
 import type { ListingAttributeValues, ListingTaxonomy } from "@/lib/taxonomy/listing-taxonomy-types";
@@ -112,7 +116,13 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
     () => taxonomy.categories.find((item) => item.id === categoryId) ?? null,
     [categoryId, taxonomy.categories],
   );
-  const selectedSubcategories = selectedCategory?.subcategories ?? [];
+  const selectedSubcategories = useMemo(
+    () =>
+      selectedCategory
+        ? getEvBagPresentationSubcategories(selectedCategory.slug, selectedCategory.subcategories)
+        : [],
+    [selectedCategory],
+  );
   const attributeDefinitions = useMemo(
     () =>
       getAttributeDefinitions(
@@ -148,6 +158,14 @@ export function CreateListingForm({ taxonomy, categorySchemaSnapshot, storeAcces
   };
 
   const handleSubcategoryChange = (nextSubcategoryId: string) => {
+    const aliasCategoryId = resolveEvBagMeisetAliasCategoryId(nextSubcategoryId, taxonomy.categories);
+    if (aliasCategoryId) {
+      setCategoryId(aliasCategoryId);
+      setSubcategoryId("");
+      setAttributes({});
+      return;
+    }
+
     setSubcategoryId(nextSubcategoryId);
     setAttributes({});
   };

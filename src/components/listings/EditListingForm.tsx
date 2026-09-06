@@ -22,6 +22,10 @@ import {
   type ListingImageUploadStage,
 } from "@/lib/listings/upload";
 import { useAuthUser } from "@/lib/supabase/use-auth-user";
+import {
+  getEvBagPresentationSubcategories,
+  resolveEvBagMeisetAliasCategoryId,
+} from "@/lib/taxonomy/ev-bag-presentation";
 import { getAttributeDefinitions } from "@/lib/taxonomy/listing-taxonomy-utils";
 import type { ListingAttributeValues, ListingTaxonomy } from "@/lib/taxonomy/listing-taxonomy-types";
 
@@ -96,12 +100,15 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
     [categoryId, taxonomy.categories],
   );
   const selectedSubcategories = useMemo(
-    () => selectedCategory?.subcategories ?? [],
+    () =>
+      selectedCategory
+        ? getEvBagPresentationSubcategories(selectedCategory.slug, selectedCategory.subcategories)
+        : [],
     [selectedCategory],
   );
   const selectedSubcategory = useMemo(
-    () => selectedSubcategories.find((item) => item.id === subcategoryId) ?? null,
-    [selectedSubcategories, subcategoryId],
+    () => selectedCategory?.subcategories.find((item) => item.id === subcategoryId) ?? null,
+    [selectedCategory, subcategoryId],
   );
   const attributeDefinitions = useMemo(
     () =>
@@ -144,6 +151,14 @@ export function EditListingForm({ listing, taxonomy, categorySchemaSnapshot }: E
   };
 
   const handleSubcategoryChange = (nextSubcategoryId: string) => {
+    const aliasCategoryId = resolveEvBagMeisetAliasCategoryId(nextSubcategoryId, taxonomy.categories);
+    if (aliasCategoryId) {
+      setCategoryId(aliasCategoryId);
+      setSubcategoryId("");
+      setAttributes({});
+      return;
+    }
+
     setSubcategoryId(nextSubcategoryId);
     setAttributes({});
   };

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
+import { EvBagTypeFilter } from "@/components/categories/EvBagTypeFilter";
 import { GroupedSubcategoryGrid } from "@/components/categories/GroupedSubcategoryGrid";
 import { LiveListingCard } from "@/components/listings/LiveListingCard";
 import { PageShell } from "@/components/layout/PageShell";
@@ -9,11 +10,20 @@ import { getListingsByCategorySlug, getListingsByCategorySlugPage } from "@/lib/
 import { createPageMetadata } from "@/lib/seo";
 import { getBreadcrumbJsonLd } from "@/lib/seo-assets";
 import { getCatalogueEntryBySlug, getCatalogueSlugs } from "@/lib/taxonomy/fetch-catalogue";
+import { fetchCategorySchemaSnapshot } from "@/lib/category-schema/fetch-category-schemas";
+import {
+  getEvBagTypeField,
+  resolveEvBagTypeFilter,
+} from "@/lib/taxonomy/ev-bag-type-fields";
 import { getSubcategoriesByCategorySlug, getSubcategoryBySlug } from "@/lib/taxonomy/fetch-subcategories";
 
 type Props = {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ sub?: string | string[]; page?: string | string[] }>;
+  searchParams: Promise<{
+    sub?: string | string[];
+    type?: string | string[];
+    page?: string | string[];
+  }>;
 };
 
 export async function generateStaticParams() {
@@ -36,10 +46,18 @@ function parsePageParam(value: string | string[] | undefined): number {
   return Math.max(1, Math.round(page));
 }
 
-function categoryPageHref(categorySlug: string, subcategorySlug: string | null | undefined, page: number): string {
+function categoryPageHref(
+  categorySlug: string,
+  subcategorySlug: string | null | undefined,
+  selectedType: string,
+  page: number,
+): string {
   const params = new URLSearchParams();
   if (subcategorySlug) {
     params.set("sub", subcategorySlug);
+  }
+  if (selectedType) {
+    params.set("type", selectedType);
   }
   if (page > 1) {
     params.set("page", String(page));
@@ -52,6 +70,7 @@ function categoryPageHref(categorySlug: string, subcategorySlug: string | null |
 function CategoryPagination({
   categorySlug,
   subcategorySlug,
+  selectedType,
   page,
   limit,
   total,
@@ -59,6 +78,7 @@ function CategoryPagination({
 }: {
   categorySlug: string;
   subcategorySlug?: string | null;
+  selectedType: string;
   page: number;
   limit: number;
   total: number;
@@ -92,7 +112,7 @@ function CategoryPagination({
 
       <div className="flex flex-wrap items-center gap-2">
         {currentPage > 1 ? (
-          <Link href={categoryPageHref(categorySlug, subcategorySlug, currentPage - 1)} className={linkClass}>
+          <Link href={categoryPageHref(categorySlug, subcategorySlug, selectedType, currentPage - 1)} className={linkClass}>
             Əvvəlki
           </Link>
         ) : (
@@ -101,7 +121,7 @@ function CategoryPagination({
 
         {pages[0] > 1 ? (
           <>
-            <Link href={categoryPageHref(categorySlug, subcategorySlug, 1)} className={linkClass}>
+            <Link href={categoryPageHref(categorySlug, subcategorySlug, selectedType, 1)} className={linkClass}>
               1
             </Link>
             {pages[0] > 2 ? <span className="px-1 text-sm text-brand-muted">...</span> : null}
@@ -114,7 +134,7 @@ function CategoryPagination({
               {item}
             </span>
           ) : (
-            <Link key={item} href={categoryPageHref(categorySlug, subcategorySlug, item)} className={linkClass}>
+            <Link key={item} href={categoryPageHref(categorySlug, subcategorySlug, selectedType, item)} className={linkClass}>
               {item}
             </Link>
           ),
@@ -125,14 +145,14 @@ function CategoryPagination({
             {pages[pages.length - 1] < totalPages - 1 ? (
               <span className="px-1 text-sm text-brand-muted">...</span>
             ) : null}
-            <Link href={categoryPageHref(categorySlug, subcategorySlug, totalPages)} className={linkClass}>
+            <Link href={categoryPageHref(categorySlug, subcategorySlug, selectedType, totalPages)} className={linkClass}>
               {totalPages}
             </Link>
           </>
         ) : null}
 
         {currentPage < totalPages ? (
-          <Link href={categoryPageHref(categorySlug, subcategorySlug, currentPage + 1)} className={linkClass}>
+          <Link href={categoryPageHref(categorySlug, subcategorySlug, selectedType, currentPage + 1)} className={linkClass}>
             Növbəti
           </Link>
         ) : (
@@ -179,11 +199,13 @@ function CategoryListingsSection({
   listingPage,
   categorySlug,
   subcategorySlug,
+  selectedType,
   emptyMessage,
 }: {
   listingPage: Awaited<ReturnType<typeof getListingsByCategorySlugPage>>;
   categorySlug: string;
   subcategorySlug?: string | null;
+  selectedType: string;
   emptyMessage: string;
 }) {
   if (listingPage.listings.length > 0) {
@@ -197,6 +219,7 @@ function CategoryListingsSection({
         <CategoryPagination
           categorySlug={categorySlug}
           subcategorySlug={subcategorySlug}
+          selectedType={selectedType}
           page={listingPage.page}
           limit={listingPage.limit}
           total={listingPage.total}
@@ -223,6 +246,7 @@ export default async function CategorySlugPage({ params, searchParams }: Props) 
   const { slug } = await params;
   const search = await searchParams;
   const sub = firstParam(search.sub).trim();
+  const requestedType = firstParam(search.type).trim();
   const page = parsePageParam(search.page);
   const entry = await getCatalogueEntryBySlug(slug);
 
@@ -248,13 +272,22 @@ export default async function CategorySlugPage({ params, searchParams }: Props) 
   }
 
   const subcategory = sub ? await getSubcategoryBySlug(slug, sub) : null;
-  const [subcategories, listingPage] = await Promise.all([
+  const [subcategories, categorySchemaSnapshot] = await Promise.all([
     getSubcategoriesByCategorySlug(slug),
-    getListingsByCategorySlugPage(slug, {
-      page,
-      subcategorySlug: subcategory?.slug,
-    }),
+    fetchCategorySchemaSnapshot(),
   ]);
+  const typeField = subcategory
+    ? getEvBagTypeField(categorySchemaSnapshot, slug, subcategory.slug)
+    : null;
+  const typeFilter = subcategory
+    ? resolveEvBagTypeFilter(categorySchemaSnapshot, slug, subcategory.slug, requestedType)
+    : null;
+  const selectedType = typeFilter?.value ?? "";
+  const listingPage = await getListingsByCategorySlugPage(slug, {
+    page,
+    subcategorySlug: subcategory?.slug,
+    typeFilter: typeFilter ?? undefined,
+  });
 
   const pageTitle = subcategory ? `${entry.title} — ${subcategory.name}` : entry.title;
   const subtitle = subcategory
@@ -280,10 +313,12 @@ export default async function CategorySlugPage({ params, searchParams }: Props) 
         subcategories={subcategories}
         activeSubSlug={subcategory?.slug}
       />
+      {typeField ? <EvBagTypeFilter field={typeField} selectedType={selectedType} /> : null}
       <CategoryListingsSection
         listingPage={listingPage}
         categorySlug={slug}
         subcategorySlug={subcategory?.slug}
+        selectedType={selectedType}
         emptyMessage={emptyMessage}
       />
     </PageShell>

@@ -18,6 +18,7 @@ import { getSubcategoryBySlug } from "@/lib/taxonomy/fetch-subcategories";
 import { isSyntheticCanonicalSubcategoryId } from "@/lib/taxonomy/marktx-taxonomy";
 import { listingLookupField } from "@/lib/listings/listing-url";
 import type { ListingAttributeValues } from "@/lib/taxonomy/listing-taxonomy-types";
+import type { EvBagTypeFilter } from "@/lib/taxonomy/ev-bag-type-fields";
 import type { ListingRow, LiveListing, LiveListingDetailView, ListingStatus, PublicListingStatus } from "@/types/live-listing";
 
 export { formatListingDate, formatListingPrice, formatListingRelativeDate };
@@ -557,7 +558,12 @@ export const getListingForSeo = cache(async (slug: string): Promise<ListingSeoRe
 
 export async function getListingsByCategorySlug(
   categorySlug: string,
-  options?: { limit?: number; subcategoryId?: string; subcategorySlug?: string },
+  options?: {
+    limit?: number;
+    subcategoryId?: string;
+    subcategorySlug?: string;
+    typeFilter?: EvBagTypeFilter;
+  },
 ): Promise<LiveListing[]> {
   const categoryFilter = await resolveCategoryFilter(categorySlug);
   if (!categoryFilter) {
@@ -593,6 +599,12 @@ export async function getListingsByCategorySlug(
     query = query.eq("subcategory_id", subcategoryId);
   }
 
+  if (options?.typeFilter) {
+    query = query.contains("attributes", {
+      [options.typeFilter.fieldKey]: options.typeFilter.value,
+    });
+  }
+
   query = query.order("created_at", { ascending: false });
 
   if (options?.limit) {
@@ -615,6 +627,7 @@ export async function getListingsByCategorySlugPage(
     limit?: number;
     subcategoryId?: string;
     subcategorySlug?: string;
+    typeFilter?: EvBagTypeFilter;
   },
 ): Promise<PaginatedListings> {
   const pagination = getPaginationRange(options);
@@ -650,6 +663,12 @@ export async function getListingsByCategorySlugPage(
       return emptyPaginatedListings(pagination);
     }
     query = query.eq("subcategory_id", subcategoryId);
+  }
+
+  if (options?.typeFilter) {
+    query = query.contains("attributes", {
+      [options.typeFilter.fieldKey]: options.typeFilter.value,
+    });
   }
 
   const { data, error, count } = await query

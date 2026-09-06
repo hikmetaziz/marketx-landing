@@ -1,6 +1,10 @@
 import Link from "next/link";
 
 import type { SubcategoryEntry } from "@/lib/taxonomy/catalogue-types";
+import {
+  getEvBagAliasHref,
+  getEvBagPresentationSubcategories,
+} from "@/lib/taxonomy/ev-bag-presentation";
 import { groupSubcategoriesForDisplay } from "@/lib/taxonomy/marktx-taxonomy";
 
 type GroupedSubcategoryGridProps = {
@@ -19,10 +23,7 @@ function linkClass(active: boolean): string {
 }
 
 function subcategoryHref(categorySlug: string, subcategorySlug: string): string {
-  if (categorySlug === "ev-ve-bag" && subcategorySlug === "meiset-texnikasi") {
-    return "/categories/meiset-texnikasi";
-  }
-  return `/categories/${categorySlug}?sub=${subcategorySlug}`;
+  return getEvBagAliasHref(categorySlug, subcategorySlug) ?? `/categories/${categorySlug}?sub=${subcategorySlug}`;
 }
 
 export function GroupedSubcategoryGrid({
@@ -30,7 +31,8 @@ export function GroupedSubcategoryGrid({
   subcategories,
   activeSubSlug,
 }: GroupedSubcategoryGridProps) {
-  const groups = groupSubcategoriesForDisplay(categorySlug, subcategories);
+  const presentationSubcategories = getEvBagPresentationSubcategories(categorySlug, subcategories);
+  const groups = groupSubcategoriesForDisplay(categorySlug, presentationSubcategories);
   if (groups.length === 0) {
     return null;
   }
